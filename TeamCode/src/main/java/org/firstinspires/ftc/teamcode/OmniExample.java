@@ -25,15 +25,15 @@ public class OmniExample extends LinearOpMode{
         DcMotor armPivotMotor = hardwareMap.dcMotor.get("armPivotMotor");
 
 
+        // Hanging Claws
         Servo rightHang = hardwareMap.get(Servo.class, "rightHangServo");
         Servo leftHang = hardwareMap.get(Servo.class, "leftHangServo");
+
 
         // Reverse the right side motors. This may be wrong for your setup.
         // If your robot moves backwards when commanded to go forwards,
         // reverse the left side instead.
         // See the note about this earlier on this page.
-        // frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        // backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         frontLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -41,8 +41,8 @@ public class OmniExample extends LinearOpMode{
         IMU imu = hardwareMap.get(IMU.class, "imu");
         // Adjust the orientation parameters to match your robot
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
-                RevHubOrientationOnRobot.LogoFacingDirection.UP,
-                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD));
+                RevHubOrientationOnRobot.LogoFacingDirection.FORWARD,
+                RevHubOrientationOnRobot.UsbFacingDirection.RIGHT));
         // Without this, the REV Hub's orientation is assumed to be logo up / USB forward
         imu.initialize(parameters);
 
@@ -85,7 +85,7 @@ public class OmniExample extends LinearOpMode{
             backRightMotor.setPower(backRightPower);
 
 
-            // Arm Pivot
+            // Arm Pivot, should be replaced with PID
             if(gamepad1.right_trigger > .5){
                 armPivotMotor.setPower(20);
             } else if(gamepad1.left_trigger > .5){
@@ -95,14 +95,13 @@ public class OmniExample extends LinearOpMode{
             }
 
             // Hanging claws
-            if(gamepad1.a) {
-                rightHang.setPosition(0);
-                leftHang.setPosition(-90);
-            } else if(gamepad1.b) {
-                rightHang.setPosition(90);
-                leftHang.setPosition(0);
+            if(gamepad1.a && rightHang.getPosition() > 0.5 && leftHang.getPosition() < 0.5) { // if A button is pressed AND both of the claws is closed
+                rightHang.setPosition(0); // They are facing away from each-other, so they start at opposite ends
+                leftHang.setPosition(1);
+            } else if(gamepad1.a && rightHang.getPosition() < 0.5 && leftHang.getPosition() > 0.5) { // if A button is pressed AND both of the claws is open
+                rightHang.setPosition(0.6); // +0.6 from starting pos
+                leftHang.setPosition(0.4); // -0.6 from starting pos; - is due to facing opposite direction
             }
-
         }
     }
 }
