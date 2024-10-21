@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
@@ -22,8 +23,15 @@ public class OmniExample extends LinearOpMode{
         DcMotor frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
         DcMotor backRightMotor = hardwareMap.dcMotor.get("backRightMotor");
 
+        // Arm Pivot Motor
+        // Encoder of ~2500 is vertical
         DcMotor armPivotMotor = hardwareMap.dcMotor.get("armPivotMotor");
+        armPivotMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
 
+        // Arm Slide Motor
+        // Encoder of -2130 is fully extended
+        DcMotor armSlideMotor = hardwareMap.dcMotor.get("armSlideMotor");
+        armSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
 
         // Hanging Claws
         Servo rightHang = hardwareMap.get(Servo.class, "rightHangServo");
@@ -85,23 +93,37 @@ public class OmniExample extends LinearOpMode{
             backRightMotor.setPower(backRightPower);
 
 
-            // Arm Pivot, should be replaced with PID
-            if(gamepad1.right_trigger > .5){
-                armPivotMotor.setPower(20);
-            } else if(gamepad1.left_trigger > .5){
-                armPivotMotor.setPower(-20);
-            } else if(gamepad1.left_trigger <.1 || gamepad1.right_trigger < .1){
-                armPivotMotor.setPower(0);
+
+
+            // Raise the arm
+            if (gamepad1.right_trigger > .5) {
+                armPivotMotor.setTargetPosition(2000);
+                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                armPivotMotor.setPower(1);
             }
 
+            // Lower the arm
+            if (gamepad1.left_trigger > .5) {
+                armPivotMotor.setTargetPosition(200);
+                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                armPivotMotor.setPower(0.8);
+            }
+
+
             // Hanging claws
-            if(gamepad1.a && rightHang.getPosition() > 0.5 && leftHang.getPosition() < 0.5) { // if A button is pressed AND both of the claws is closed
+            if (gamepad1.a && ((rightHang.getPosition() > 0.55) || (leftHang.getPosition() < 0.45))) { // if A button is pressed AND both of the claws is closed
                 rightHang.setPosition(0); // They are facing away from each-other, so they start at opposite ends
                 leftHang.setPosition(1);
-            } else if(gamepad1.a && rightHang.getPosition() < 0.5 && leftHang.getPosition() > 0.5) { // if A button is pressed AND both of the claws is open
+                telemetry.addLine("Opening Hanging Hooks");
+            } else if (gamepad1.a && ((rightHang.getPosition() < 0.55) || (leftHang.getPosition() > 0.45))) { // if A button is pressed AND both of the claws is open
                 rightHang.setPosition(0.6); // +0.6 from starting pos
                 leftHang.setPosition(0.4); // -0.6 from starting pos; - is due to facing opposite direction
+                telemetry.addLine("Closing Hanging Hooks");
             }
+
+            telemetry.addData("Arm Pivot Encoder Position", armPivotMotor.getCurrentPosition());
+            telemetry.addData("Arm Slide Encoder Position", armSlideMotor.getCurrentPosition());
+            telemetry.update();
         }
     }
 }
