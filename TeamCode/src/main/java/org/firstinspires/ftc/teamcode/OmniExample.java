@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -12,12 +13,39 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
+
+/*
+--------------------------------------
+---------- CONTROL SCHEME ------------
+Buttons:
+    A: Toggle Intake
+    B: Toggle Reverse Intake
+    X: Toggle Hanging Hooks
+
+D-Pad:
+    UP: Hold to Extend Arm Slide
+    DOWN: Hold to Retract Arm Slide
+
+Triggers:
+    RT: Raise Arm
+    LT: Lower Arm
+
+Shoulder Buttons:
+    RB: Rotate Claw Wrist Strait
+    LB: Rotate Claw Wrist Left / Stow
+
+Joysticks:
+    Right: Relative Chassis Rotation
+    Left: Absolute Chassis Strafe based on orientation when START button is pressed
+ */
+
+
 @TeleOp
 public class OmniExample extends LinearOpMode{
     @Override
     public void runOpMode() throws InterruptedException {
-        // Declare our motors
-        // Make sure your ID's match your configuration
+        // Hardware Definitions. Must match names setup in robot configuration in the driver hub
+        // Drive Motors
         DcMotor frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
         DcMotor backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
         DcMotor frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
@@ -36,6 +64,10 @@ public class OmniExample extends LinearOpMode{
         // Hanging Claws
         Servo rightHang = hardwareMap.get(Servo.class, "rightHangServo");
         Servo leftHang = hardwareMap.get(Servo.class, "leftHangServo");
+
+        // Game Element Intake Claw
+        Servo clawWrist = hardwareMap.get(Servo.class, "clawWristServo");
+        CRServo clawIntake = hardwareMap.get(CRServo.class, "clawIntakeServo");
 
 
         // Reverse the right side motors. This may be wrong for your setup.
@@ -110,19 +142,54 @@ public class OmniExample extends LinearOpMode{
             }
 
 
-            // Hanging claws
-            if (gamepad1.a && ((rightHang.getPosition() > 0.55) || (leftHang.getPosition() < 0.45))) { // if A button is pressed AND both of the claws is closed
+            // Hanging hooks
+            if (gamepad1.x && ((rightHang.getPosition() > 0.55) || (leftHang.getPosition() < 0.45))) { // if A button is pressed AND both of the claws is closed
                 rightHang.setPosition(0); // They are facing away from each-other, so they start at opposite ends
                 leftHang.setPosition(1);
-                telemetry.addLine("Opening Hanging Hooks");
-            } else if (gamepad1.a && ((rightHang.getPosition() < 0.55) || (leftHang.getPosition() > 0.45))) { // if A button is pressed AND both of the claws is open
+            } else if (gamepad1.x && ((rightHang.getPosition() < 0.55) || (leftHang.getPosition() > 0.45))) { // if A button is pressed AND both of the claws is open
                 rightHang.setPosition(0.6); // +0.6 from starting pos
                 leftHang.setPosition(0.4); // -0.6 from starting pos; - is due to facing opposite direction
-                telemetry.addLine("Closing Hanging Hooks");
             }
 
-            telemetry.addData("Arm Pivot Encoder Position", armPivotMotor.getCurrentPosition());
-            telemetry.addData("Arm Slide Encoder Position", armSlideMotor.getCurrentPosition());
+            // -------------- UNTESTED ----------------------------------------------------------------------------------------------------------------------
+            // Claw Wrist
+            if (gamepad1.right_bumper) {
+                clawWrist.setPosition(0);
+            } else if (gamepad1.left_bumper) {
+                clawWrist.setPosition(0.25);
+            }
+
+            // Claw Intake
+            if (gamepad1.a) {
+                clawIntake.setPower(1); // set the power of the continuous servo to full forward
+            } else if (gamepad1.b) {
+                clawIntake.setPower(-1); // full backward
+            } else {
+                clawIntake.setPower(0); // no power
+            }
+
+            // Arm Slide
+            int armSlidePos = armSlideMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
+            if(gamepad1.dpad_up && armSlidePos <= 2100) {
+                armSlideMotor.setPower(-0.15); // extend continuously while button is held
+                armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            } else if (gamepad1.dpad_down && armSlidePos >= 0) {
+                armSlideMotor.setPower(0.15);  // retract continuously while button is held
+                armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            } else {
+                armSlideMotor.setTargetPosition(armSlideMotor.getCurrentPosition()); // hold the motor in its current position
+                armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
+                armSlideMotor.setPower(0.15); // Holding power
+            }
+            // -------------- END OF UNTESTED ----------------------------------------------------------------------------------------------------------
+
+            // Outputs telemetry data to driver hub screen
+            telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
+            telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
+            telemetry.addData("Right Hang Servo Position  :", rightHang.getPosition());
+            telemetry.addData("Left Hang Servo Position   :", leftHang.getPosition());
+            telemetry.addData("Claw Wrist Servo Position  :", clawWrist.getPosition());
+            telemetry.addData("Claw Intake Servo Power    :", clawIntake.getPower());
             telemetry.update();
         }
     }
