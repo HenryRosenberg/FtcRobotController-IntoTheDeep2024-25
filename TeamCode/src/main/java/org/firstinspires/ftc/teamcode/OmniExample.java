@@ -60,6 +60,7 @@ public class OmniExample extends LinearOpMode{
         // Encoder of -2130 is fully extended
         DcMotor armSlideMotor = hardwareMap.dcMotor.get("armSlideMotor");
         armSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
+        int armSlideDesiredPos = 0;
 
         // Hanging Claws
         Servo rightHang = hardwareMap.get(Servo.class, "rightHangServo");
@@ -129,7 +130,7 @@ public class OmniExample extends LinearOpMode{
 
             // Raise the arm
             if (gamepad1.right_trigger > .5) {
-                armPivotMotor.setTargetPosition(2000);
+                armPivotMotor.setTargetPosition(1500);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 armPivotMotor.setPower(1);
             }
@@ -171,15 +172,19 @@ public class OmniExample extends LinearOpMode{
             // Arm Slide
             int armSlidePos = armSlideMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
             if(gamepad1.dpad_up && armSlidePos <= 2100) {
-                armSlideMotor.setPower(-0.15); // extend continuously while button is held
+                armSlideMotor.setPower(1); // extend continuously while button is held
+                armSlideMotor.setDirection(DcMotor.Direction.REVERSE);
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            } else if (gamepad1.dpad_down && armSlidePos >= 0) {
-                armSlideMotor.setPower(0.15);  // retract continuously while button is held
+                armSlideDesiredPos = armSlideMotor.getCurrentPosition();
+            } else if (gamepad1.dpad_down && (armSlidePos >= 100 || armSlidePos <= -100)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isnt within 50 of zero
+                armSlideMotor.setPower(1);  // retract continuously while button is held
+                armSlideMotor.setDirection(DcMotor.Direction.FORWARD);
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                armSlideDesiredPos = armSlideMotor.getCurrentPosition();
             } else {
-                armSlideMotor.setTargetPosition(armSlideMotor.getCurrentPosition()); // hold the motor in its current position
+                armSlideMotor.setTargetPosition(armSlideDesiredPos); // hold the motor in its current position
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
-                armSlideMotor.setPower(0.15); // Holding power
+                armSlideMotor.setPower(1); // Holding power
             }
             // -------------- END OF UNTESTED ----------------------------------------------------------------------------------------------------------
 
