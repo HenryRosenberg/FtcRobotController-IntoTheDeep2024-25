@@ -55,6 +55,10 @@ public class OmniExample extends LinearOpMode{
         // Encoder of ~2500 is vertical
         DcMotor armPivotMotor = hardwareMap.dcMotor.get("armPivotMotor");
         armPivotMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
+        int armPivotDesiredPos = 400;
+
+
+
 
         // Arm Slide Motor
         // Encoder of -2130 is fully extended
@@ -127,7 +131,7 @@ public class OmniExample extends LinearOpMode{
 
 
 
-
+            /*
             // Raise the arm
             if (gamepad1.right_trigger > .5) {
                 armPivotMotor.setTargetPosition(1500);
@@ -140,6 +144,24 @@ public class OmniExample extends LinearOpMode{
                 armPivotMotor.setTargetPosition(200);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 armPivotMotor.setPower(0.8);
+            }
+
+            */
+            int armPivotPos = armPivotMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
+            if(gamepad1.right_trigger > 0.5 && armPivotPos <= 4000) {
+                armPivotMotor.setPower(1); // extend continuously while button is held
+                armPivotMotor.setDirection(DcMotor.Direction.FORWARD);
+                armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                armPivotDesiredPos = armPivotMotor.getCurrentPosition();
+            } else if (gamepad1.left_trigger > 0.5 && (armPivotPos >= 300 || armPivotPos <= -300)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isnt within 50 of zero
+                armPivotMotor.setPower(1);  // retract continuously while button is held
+                armPivotMotor.setDirection(DcMotor.Direction.REVERSE);
+                armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                armPivotDesiredPos = armPivotMotor.getCurrentPosition();
+            } else {
+                armPivotMotor.setTargetPosition(armPivotDesiredPos); // hold the motor in its current position
+                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
+                armPivotMotor.setPower(1); // Holding power
             }
 
 
