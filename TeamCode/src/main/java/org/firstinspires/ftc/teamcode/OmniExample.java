@@ -2,15 +2,12 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.ElapsedTime;
-
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 
@@ -44,7 +41,7 @@ Joysticks:
 public class OmniExample extends LinearOpMode{
     @Override
     public void runOpMode() throws InterruptedException {
-        // Hardware Definitions. Must match names setup in robot configuration in the driver hub
+        // Hardware Definitions. Must match names setup in robot configuration in the driver hub. config is created and selected selected with driver hub menu
         // Drive Motors
         DcMotor frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
         DcMotor backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
@@ -55,9 +52,7 @@ public class OmniExample extends LinearOpMode{
         // Encoder of ~2500 is vertical
         DcMotor armPivotMotor = hardwareMap.dcMotor.get("armPivotMotor");
         armPivotMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
-        int armPivotDesiredPos = 400;
-
-
+        int armPivotDesiredPos = 400; // position the arm pivot will assume when the program is run, until a different position is commanded
 
 
         // Arm Slide Motor
@@ -75,16 +70,13 @@ public class OmniExample extends LinearOpMode{
         CRServo clawIntake = hardwareMap.get(CRServo.class, "clawIntakeServo");
 
 
-        // Reverse the right side motors. This may be wrong for your setup.
-        // If your robot moves backwards when commanded to go forwards,
-        // reverse the left side instead.
-        // See the note about this earlier on this page.
+        // Reverse some of the drive motors depending on physical setup
         frontLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // Retrieve the IMU from the hardware map
         IMU imu = hardwareMap.get(IMU.class, "imu");
-        // Adjust the orientation parameters to match your robot
+        // Adjust the orientation parameters to match your robot <------------------------------------------------------- IMPORTANT
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.FORWARD,
                 RevHubOrientationOnRobot.UsbFacingDirection.RIGHT));
@@ -129,31 +121,14 @@ public class OmniExample extends LinearOpMode{
             frontRightMotor.setPower(frontRightPower);
             backRightMotor.setPower(backRightPower);
 
-
-
-            /*
-            // Raise the arm
-            if (gamepad1.right_trigger > .5) {
-                armPivotMotor.setTargetPosition(1500);
-                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                armPivotMotor.setPower(1);
-            }
-
-            // Lower the arm
-            if (gamepad1.left_trigger > .5) {
-                armPivotMotor.setTargetPosition(200);
-                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                armPivotMotor.setPower(0.8);
-            }
-
-            */
+            // Arm Pivot Motor
             int armPivotPos = armPivotMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
             if(gamepad1.right_trigger > 0.5 && armPivotPos <= 4000) {
                 armPivotMotor.setPower(1); // extend continuously while button is held
                 armPivotMotor.setDirection(DcMotor.Direction.FORWARD);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 armPivotDesiredPos = armPivotMotor.getCurrentPosition();
-            } else if (gamepad1.left_trigger > 0.5 && (armPivotPos >= 300 || armPivotPos <= -300)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isnt within 50 of zero
+            } else if (gamepad1.left_trigger > 0.5 && (armPivotPos >= 300 || armPivotPos <= -300)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 50 of zero
                 armPivotMotor.setPower(1);  // retract continuously while button is held
                 armPivotMotor.setDirection(DcMotor.Direction.REVERSE);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -190,33 +165,35 @@ public class OmniExample extends LinearOpMode{
             } else {
                 clawIntake.setPower(0); // no power
             }
+            // -------------- END UNTESTED ----------------------------------------------------------------------------------------------------------
+
 
             // Arm Slide
             int armSlidePos = armSlideMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
-            if(gamepad1.dpad_up && armSlidePos <= 2100) {
+            if(gamepad1.dpad_up && armSlidePos <= 2100) { // 2100 is hardcoded end stop
                 armSlideMotor.setPower(1); // extend continuously while button is held
                 armSlideMotor.setDirection(DcMotor.Direction.REVERSE);
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 armSlideDesiredPos = armSlideMotor.getCurrentPosition();
-            } else if (gamepad1.dpad_down && (armSlidePos >= 100 || armSlidePos <= -100)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isnt within 50 of zero
+            } else if (gamepad1.dpad_down && (armSlidePos >= 100 || armSlidePos <= -100)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 50 of zero
                 armSlideMotor.setPower(1);  // retract continuously while button is held
                 armSlideMotor.setDirection(DcMotor.Direction.FORWARD);
-                armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                armSlideDesiredPos = armSlideMotor.getCurrentPosition();
+                armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // Use builtin PID loop to run to position
+                armSlideDesiredPos = armSlideMotor.getCurrentPosition(); // store current position in case the button isn't pressed next loop, so it knows where to hold
             } else {
-                armSlideMotor.setTargetPosition(armSlideDesiredPos); // hold the motor in its current position
+                armSlideMotor.setTargetPosition(armSlideDesiredPos); // hold the motor at the position it was in last time it was moved
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
                 armSlideMotor.setPower(1); // Holding power
             }
-            // -------------- END OF UNTESTED ----------------------------------------------------------------------------------------------------------
+
 
             // Outputs telemetry data to driver hub screen
             telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
             telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
-            telemetry.addData("Right Hang Servo Position  :", rightHang.getPosition());
-            telemetry.addData("Left Hang Servo Position   :", leftHang.getPosition());
-            telemetry.addData("Claw Wrist Servo Position  :", clawWrist.getPosition());
-            telemetry.addData("Claw Intake Servo Power    :", clawIntake.getPower());
+            telemetry.addData("Right Hang Servo Position :", rightHang.getPosition());
+            telemetry.addData("Left Hang Servo Position :", leftHang.getPosition());
+            telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
+            telemetry.addData("Claw Intake Servo Power :", clawIntake.getPower());
             telemetry.update();
         }
     }
