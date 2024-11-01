@@ -15,8 +15,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 --------------------------------------
 ---------- CONTROL SCHEME ------------
 Buttons:
-    A: Toggle Intake
-    B: Toggle Reverse Intake
+    A: Hold for Intake
+    B: Hold for Reverse Intake
     X: Toggle Hanging Hooks
 
 D-Pad:
@@ -68,6 +68,7 @@ public class OmniExample extends LinearOpMode{
         // Game Element Intake Claw
         Servo clawWrist = hardwareMap.get(Servo.class, "clawWristServo");
         CRServo clawIntake = hardwareMap.get(CRServo.class, "clawIntakeServo");
+        clawWrist.setPosition(-1); // start within the starting config
 
 
         // Reverse some of the drive motors depending on physical setup
@@ -149,23 +150,21 @@ public class OmniExample extends LinearOpMode{
                 leftHang.setPosition(0.4); // -0.6 from starting pos; - is due to facing opposite direction
             }
 
-            // -------------- UNTESTED ----------------------------------------------------------------------------------------------------------------------
             // Claw Wrist
             if (gamepad1.right_bumper) {
-                clawWrist.setPosition(0);
+                clawWrist.setPosition(0.35);
             } else if (gamepad1.left_bumper) {
-                clawWrist.setPosition(0.25);
+                clawWrist.setPosition(-1);
             }
 
             // Claw Intake
             if (gamepad1.a) {
-                clawIntake.setPower(1); // set the power of the continuous servo to full forward
+                clawIntake.setPower(-1); // set the power of the continuous servo to full forward
             } else if (gamepad1.b) {
-                clawIntake.setPower(-1); // full backward
+                clawIntake.setPower(1); // full backward
             } else {
                 clawIntake.setPower(0); // no power
             }
-            // -------------- END UNTESTED ----------------------------------------------------------------------------------------------------------
 
 
             // Arm Slide
