@@ -60,6 +60,7 @@ public class OmniExample extends LinearOpMode{
         DcMotor armSlideMotor = hardwareMap.dcMotor.get("armSlideMotor");
         armSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
         int armSlideDesiredPos = 0;
+        int armSlideLastMoveDirection = 0; // 0 = startup, 1 = reverse, 2 = forward
 
         // Hanging Claws
         Servo rightHang = hardwareMap.get(Servo.class, "rightHangServo");
@@ -129,7 +130,7 @@ public class OmniExample extends LinearOpMode{
                 armPivotMotor.setDirection(DcMotor.Direction.FORWARD);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 armPivotDesiredPos = armPivotMotor.getCurrentPosition();
-            } else if (gamepad1.left_trigger > 0.5 && (armPivotPos >= 300 || armPivotPos <= -300)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 50 of zero
+            } else if (gamepad1.left_trigger > 0.5 && (armPivotPos >= 150 || armPivotPos <= -150)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 50 of zero
                 armPivotMotor.setPower(1);  // retract continuously while button is held
                 armPivotMotor.setDirection(DcMotor.Direction.REVERSE);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -168,17 +169,20 @@ public class OmniExample extends LinearOpMode{
 
 
             // Arm Slide
+            //encoder directions become negative depending on motor directions
             int armSlidePos = armSlideMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
-            if(gamepad1.dpad_up && armSlidePos <= 2100) { // 2100 is hardcoded end stop
+            if(gamepad1.dpad_up && (armSlidePos <= 2100 || armSlideLastMoveDirection == 1 || armSlideLastMoveDirection == 0)) { // 2100 is hardcoded end stop
                 armSlideMotor.setPower(1); // extend continuously while button is held
                 armSlideMotor.setDirection(DcMotor.Direction.REVERSE);
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 armSlideDesiredPos = armSlideMotor.getCurrentPosition();
-            } else if (gamepad1.dpad_down && (armSlidePos >= 100 || armSlidePos <= -100)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 50 of zero
+                armSlideLastMoveDirection = 2; // forward
+            } else if (gamepad1.dpad_down && ((armSlideLastMoveDirection == 2 && armSlidePos >= 35) || (armSlideLastMoveDirection == 1 && armSlidePos <= 35))) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 35 of zero (due to belt slop)
                 armSlideMotor.setPower(1);  // retract continuously while button is held
                 armSlideMotor.setDirection(DcMotor.Direction.FORWARD);
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // Use builtin PID loop to run to position
                 armSlideDesiredPos = armSlideMotor.getCurrentPosition(); // store current position in case the button isn't pressed next loop, so it knows where to hold
+                armSlideLastMoveDirection = 1; // backward
             } else {
                 armSlideMotor.setTargetPosition(armSlideDesiredPos); // hold the motor at the position it was in last time it was moved
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
