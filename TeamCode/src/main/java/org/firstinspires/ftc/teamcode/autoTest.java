@@ -72,6 +72,7 @@ public class autoTest extends LinearOpMode {
         if (isStopRequested()) {return;}
 
     }
+    boolean runningAuto = false;
     public void moveToPosition(double inches, double speed) {
 
         Double width = 16.0; //inches
@@ -112,26 +113,27 @@ public class autoTest extends LinearOpMode {
         frontLeftMotor.setPower(0);
         backRightMotor.setPower(0);
         backLeftMotor.setPower(0);
-        stop();
 
+        if(!runningAuto) {
+            while (opModeIsActive()) {
+                runningAuto = true;
+                if (isStopRequested()) {
+                    stop();
+                }
 
-        while (opModeIsActive()) {
-            if (isStopRequested()) {
+                moveToPosition(12, 1);
+
+                // Outputs telemetry data to driver hub screen
+                telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
+                telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
+                telemetry.addData("Right Hang Servo Position :", rightHang.getPosition());
+                telemetry.addData("Left Hang Servo Position :", leftHang.getPosition());
+                telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
+                telemetry.addData("Claw Intake Servo Power :", clawIntake.getPower());
+                telemetry.update();
+
                 stop();
             }
-
-            moveToPosition(12, 1);
-
-            // Outputs telemetry data to driver hub screen
-            telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
-            telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
-            telemetry.addData("Right Hang Servo Position :", rightHang.getPosition());
-            telemetry.addData("Left Hang Servo Position :", leftHang.getPosition());
-            telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
-            telemetry.addData("Claw Intake Servo Power :", clawIntake.getPower());
-            telemetry.update();
-
-            stop();
         }
     }
 }
