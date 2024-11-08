@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.IMU;
@@ -39,36 +40,48 @@ Joysticks:
 
 @TeleOp
 public class OmniExample extends LinearOpMode{
+    DcMotor frontLeftMotor;
+    DcMotor backLeftMotor;
+    DcMotor frontRightMotor;
+    DcMotor backRightMotor;
+    DcMotor armPivotMotor;
+    DcMotor armSlideMotor;
+    Servo rightHang;
+    Servo leftHang;
+    Servo clawWrist;
+    CRServo clawIntake;
+    IMU imu;
+
     @Override
     public void runOpMode() throws InterruptedException {
         // Hardware Definitions. Must match names setup in robot configuration in the driver hub. config is created and selected selected with driver hub menu
         // Drive Motors
-        DcMotor frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
-        DcMotor backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
-        DcMotor frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
-        DcMotor backRightMotor = hardwareMap.dcMotor.get("backRightMotor");
+        frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
+        backLeftMotor = hardwareMap.dcMotor.get("backLeftMotor");
+        frontRightMotor = hardwareMap.dcMotor.get("frontRightMotor");
+        backRightMotor = hardwareMap.dcMotor.get("backRightMotor");
 
         // Arm Pivot Motor
         // Encoder of ~2500 is vertical
-        DcMotor armPivotMotor = hardwareMap.dcMotor.get("armPivotMotor");
+        armPivotMotor = hardwareMap.dcMotor.get("armPivotMotor");
         armPivotMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
         int armPivotDesiredPos = 400; // position the arm pivot will assume when the program is run, until a different position is commanded
 
 
         // Arm Slide Motor
         // Encoder of -2130 is fully extended
-        DcMotor armSlideMotor = hardwareMap.dcMotor.get("armSlideMotor");
+        armSlideMotor = hardwareMap.dcMotor.get("armSlideMotor");
         armSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
         int armSlideDesiredPos = 0;
         int armSlideLastMoveDirection = 0; // 0 = startup, 1 = reverse, 2 = forward
 
         // Hanging Claws
-        Servo rightHang = hardwareMap.get(Servo.class, "rightHangServo");
-        Servo leftHang = hardwareMap.get(Servo.class, "leftHangServo");
+        rightHang = hardwareMap.get(Servo.class, "rightHangServo");
+        leftHang = hardwareMap.get(Servo.class, "leftHangServo");
 
         // Game Element Intake Claw
-        Servo clawWrist = hardwareMap.get(Servo.class, "clawWristServo");
-        CRServo clawIntake = hardwareMap.get(CRServo.class, "clawIntakeServo");
+        clawWrist = hardwareMap.get(Servo.class, "clawWristServo");
+        clawIntake = hardwareMap.get(CRServo.class, "clawIntakeServo");
         clawWrist.setPosition(-1); // start within the starting config
 
 
@@ -77,7 +90,7 @@ public class OmniExample extends LinearOpMode{
         backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // Retrieve the IMU from the hardware map
-        IMU imu = hardwareMap.get(IMU.class, "imu");
+        imu = hardwareMap.get(IMU.class, "imu");
         // Adjust the orientation parameters to match your robot <------------------------------------------------------- IMPORTANT
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.FORWARD,
@@ -186,7 +199,7 @@ public class OmniExample extends LinearOpMode{
             } else {
                 armSlideMotor.setTargetPosition(armSlideDesiredPos); // hold the motor at the position it was in last time it was moved
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
-                armSlideMotor.setPower(1); // Holding power
+                armSlideMotor.setPower(0.25); // Holding power
             }
 
 
@@ -201,3 +214,4 @@ public class OmniExample extends LinearOpMode{
         }
     }
 }
+
