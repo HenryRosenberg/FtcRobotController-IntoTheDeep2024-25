@@ -1,6 +1,4 @@
 package org.firstinspires.ftc.teamcode;
-
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.IMU;
@@ -11,35 +9,36 @@ import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-
 /*
---------------------------------------
 ---------- CONTROL SCHEME ------------
-Buttons:
+
+Buttons (Controller 1):
     A: Hold for Intake
     B: Hold for Reverse Intake
     X: Toggle Hanging Hooks
 
-D-Pad:
+D-Pad (Controller 1):
     UP: Hold to Extend Arm Slide
     DOWN: Hold to Retract Arm Slide
+    LEFT: Set slide holding power to 0.5
+    RIGHT: Set slide holding power to 1
 
-Triggers:
+Triggers (Controller 1):
     RT: Raise Arm
     LT: Lower Arm
 
-Shoulder Buttons:
+Shoulder Buttons (Controller 1):
     RB: Rotate Claw Wrist Strait
     LB: Rotate Claw Wrist Left / Stow
 
-Joysticks:
+Joysticks (Both Controllers):
     Right: Relative Chassis Rotation
     Left: Absolute Chassis Strafe based on orientation when START button is pressed
  */
 
 
 @TeleOp
-public class OmniExample extends LinearOpMode{
+public class omniTeleOP extends LinearOpMode{
     DcMotor frontLeftMotor;
     DcMotor backLeftMotor;
     DcMotor frontRightMotor;
@@ -69,11 +68,12 @@ public class OmniExample extends LinearOpMode{
 
 
         // Arm Slide Motor
-        // Encoder of -2130 is fully extended
+        // Encoder of |2130| is fully extended
         armSlideMotor = hardwareMap.dcMotor.get("armSlideMotor");
         armSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
         int armSlideDesiredPos = 0;
-        int armSlideLastMoveDirection = 0; // 0 = startup, 1 = reverse, 2 = forward
+        boolean armSlideLastMoveDirection = false; // false = retract, true = extend, starting is equivalent to having just retracted
+        double armSlideHoldingPower = 0.5; // Power to hold slide in place, 0.5 to prevent overheating, can be set to 1 for hangs
 
         // Hanging Claws
         rightHang = hardwareMap.get(Servo.class, "rightHangServo");
@@ -103,14 +103,38 @@ public class OmniExample extends LinearOpMode{
         if (isStopRequested()) return;
 
         while (opModeIsActive()) {
-            double y = -gamepad1.left_stick_y; // Remember, Y stick value is reversed
-            double x = gamepad1.left_stick_x;
-            double rx = gamepad1.right_stick_x;
+
+            // Take whichever value is the most drastic change to use from either controller
+            double y;
+            double x;
+            double rx;
+
+            if(Math.abs(-gamepad2.left_stick_y) > Math.abs(-gamepad1.left_stick_y)) { // Y stick value is reversed
+                y = -gamepad2.left_stick_y;
+            } else {
+                y = -gamepad1.left_stick_y;
+            }
+
+            if(Math.abs(gamepad2.left_stick_x) > Math.abs(gamepad1.left_stick_x)) {
+                x = gamepad2.left_stick_x;
+            } else {
+                x = gamepad1.left_stick_x;
+            }
+
+            if(Math.abs(gamepad2.right_stick_x) > Math.abs(gamepad1.right_stick_x)) {
+                rx = gamepad2.right_stick_x;
+            } else {
+                rx = gamepad1.right_stick_x;
+            }
+
+            //double y = -gamepad1.left_stick_y;
+            //double x = gamepad1.left_stick_x;
+            //double rx = gamepad1.right_stick_x;
 
             // This button choice was made so that it is hard to hit on accident,
             // it can be freely changed based on preference.
             // The equivalent button is start on Xbox-style controllers.
-            if (gamepad1.options) {
+            if (gamepad1.options || gamepad2.options) {
                 imu.resetYaw();
             }
 
@@ -184,28 +208,35 @@ public class OmniExample extends LinearOpMode{
             // Arm Slide
             //encoder directions become negative depending on motor directions
             int armSlidePos = armSlideMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
-            if(gamepad1.dpad_up && (armSlidePos <= 2100 || armSlideLastMoveDirection == 1 || armSlideLastMoveDirection == 0)) { // 2100 is hardcoded end stop
+            if(gamepad1.dpad_up && (Math.abs(armSlidePos) <= 2100)) { // 2100 is hardcoded end stop
                 armSlideMotor.setPower(1); // extend continuously while button is held
                 armSlideMotor.setDirection(DcMotor.Direction.REVERSE);
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 armSlideDesiredPos = armSlideMotor.getCurrentPosition();
-                armSlideLastMoveDirection = 2; // forward
-            } else if (gamepad1.dpad_down && ((armSlideLastMoveDirection == 2 && armSlidePos >= 35) || (armSlideLastMoveDirection == 1 && armSlidePos <= 35))) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 35 of zero (due to belt slop)
+                armSlideLastMoveDirection = true; // forward
+            } else if (gamepad1.dpad_down && (armSlideLastMoveDirection || Math.abs(armSlidePos) >= 50 )) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 35 of zero (due to belt slop)
                 armSlideMotor.setPower(1);  // retract continuously while button is held
                 armSlideMotor.setDirection(DcMotor.Direction.FORWARD);
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // Use builtin PID loop to run to position
                 armSlideDesiredPos = armSlideMotor.getCurrentPosition(); // store current position in case the button isn't pressed next loop, so it knows where to hold
-                armSlideLastMoveDirection = 1; // backward
-            } else {
+                armSlideLastMoveDirection = false; // backward
+            } else { // Half force, to prevent overheating
                 armSlideMotor.setTargetPosition(armSlideDesiredPos); // hold the motor at the position it was in last time it was moved
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
-                armSlideMotor.setPower(0.25); // Holding power
+                armSlideMotor.setPower(armSlideHoldingPower); // Holding power
+            }
+            // Holding Power, for hanging
+            if(gamepad1.dpad_left) {
+                armSlideHoldingPower = 0.5;
+            } else if(gamepad1.dpad_right) {
+                armSlideHoldingPower = 1;
             }
 
 
             // Outputs telemetry data to driver hub screen
             telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
             telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
+            telemetry.addData("Arm Slide Motor Power :", armSlideMotor.getPower());
             telemetry.addData("Right Hang Servo Position :", rightHang.getPosition());
             telemetry.addData("Left Hang Servo Position :", leftHang.getPosition());
             telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
