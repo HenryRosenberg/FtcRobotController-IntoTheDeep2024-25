@@ -42,7 +42,6 @@ public class omniAutoTest extends LinearOpMode {
         // Encoder of -2130 is fully extended
         armSlideMotor = hardwareMap.dcMotor.get("armSlideMotor");
         armSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
-        int armSlideLastMoveDirection = 0; // 0 = startup, 1 = reverse, 2 = forward
 
         // Hanging Claws
         rightHang = hardwareMap.get(Servo.class, "rightHangServo");
@@ -73,7 +72,7 @@ public class omniAutoTest extends LinearOpMode {
         if (isStopRequested()) {
             return;
         }
-        while (opModeIsActive()) {
+        if (opModeIsActive()) { // Used to be a while loop
             telemetry.addData("Auto Status :", "Started \n");
             telemetry.update();
 
@@ -102,12 +101,12 @@ public class omniAutoTest extends LinearOpMode {
             double power = 1;
             double inches = 12; // How far to move
 
-            Double cpr = 537.7; //counts per rotation
-            Double gearratio = 19.2;
-            Double diameter = (96 / 25.4); // 96mm wheels
-            Double cpi = (cpr * gearratio) / (Math.PI * diameter); //counts per inch, cpr * gear ratio / (2 * pi * diameter (in inches, in the center))
-            Double bias = 0.8;//default 0.8
-            Double conversion = cpi * bias;
+            double cpr = 537.7; //counts per rotation
+            double gearRatio = 19.2;
+            double diameter = (96 / 25.4); // 96mm wheels, 25.4 mm per inch
+            double cpi = (cpr * gearRatio) / (Math.PI * diameter); //counts per inch, cpr * gear ratio / (pi * diameter (in inches, in the center))
+            double bias = 0.8;//default 0.8
+            double conversion = cpi * bias;
 
             int move = (int) (Math.round(inches * conversion));
 
@@ -185,8 +184,6 @@ public class omniAutoTest extends LinearOpMode {
             telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
             telemetry.addData("Claw Intake Servo Power :", clawIntake.getPower());
             telemetry.update();
-
-            return; // end of autonomous, don't keep looping
         }
     }
 }

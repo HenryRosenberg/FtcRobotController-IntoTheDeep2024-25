@@ -51,6 +51,16 @@ public class omniTeleOP extends LinearOpMode{
     CRServo clawIntake;
     IMU imu;
 
+    private double calcLargestChange(double a, double b) {
+        // Return the value of the greatest absolute value of either a or b
+        if(Math.abs(b) > Math.abs(a)) {
+            return b;
+        } else {
+            return a;
+        }
+    }
+
+
     @Override
     public void runOpMode() throws InterruptedException {
         // Hardware Definitions. Must match names setup in robot configuration in the driver hub. config is created and selected selected with driver hub menu
@@ -105,27 +115,10 @@ public class omniTeleOP extends LinearOpMode{
         while (opModeIsActive()) {
 
             // Take whichever value is the most drastic change to use from either controller
-            double y;
-            double x;
-            double rx;
+            double y = calcLargestChange(-gamepad1.left_stick_y, -gamepad2.left_stick_y); // Y stick values are reported as inverted by the controller
+            double x = calcLargestChange(gamepad1.left_stick_x, gamepad2.left_stick_x);
+            double rx = calcLargestChange(gamepad1.right_stick_x, gamepad2.right_stick_x);
 
-            if(Math.abs(-gamepad2.left_stick_y) > Math.abs(-gamepad1.left_stick_y)) { // Y stick value is reversed
-                y = -gamepad2.left_stick_y;
-            } else {
-                y = -gamepad1.left_stick_y;
-            }
-
-            if(Math.abs(gamepad2.left_stick_x) > Math.abs(gamepad1.left_stick_x)) {
-                x = gamepad2.left_stick_x;
-            } else {
-                x = gamepad1.left_stick_x;
-            }
-
-            if(Math.abs(gamepad2.right_stick_x) > Math.abs(gamepad1.right_stick_x)) {
-                rx = gamepad2.right_stick_x;
-            } else {
-                rx = gamepad1.right_stick_x;
-            }
 
             //double y = -gamepad1.left_stick_y;
             //double x = gamepad1.left_stick_x;
@@ -220,7 +213,7 @@ public class omniTeleOP extends LinearOpMode{
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // Use builtin PID loop to run to position
                 armSlideDesiredPos = armSlideMotor.getCurrentPosition(); // store current position in case the button isn't pressed next loop, so it knows where to hold
                 armSlideLastMoveDirection = false; // backward
-            } else { // Half force, to prevent overheating
+            } else {
                 armSlideMotor.setTargetPosition(armSlideDesiredPos); // hold the motor at the position it was in last time it was moved
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
                 armSlideMotor.setPower(armSlideHoldingPower); // Holding power
