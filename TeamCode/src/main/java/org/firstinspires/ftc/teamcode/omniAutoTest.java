@@ -1,5 +1,6 @@
-package org.firstinspires.ftc.teamcode;
+// Written primarily by Henry Rosenberg for AcaBots FTC Team #24689
 
+package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -76,6 +77,7 @@ public class omniAutoTest extends LinearOpMode {
             telemetry.addData("Auto Status :", "Started \n");
             telemetry.update();
 
+
             // Pivot arm upward
             armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             armPivotMotor.setTargetPosition(600);
@@ -84,7 +86,7 @@ public class omniAutoTest extends LinearOpMode {
             // Slide the slide out
             armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             armSlideMotor.setTargetPosition(1000);
-            armSlideMotor.setPower(0.75);
+            armSlideMotor.setPower(0.5);
 
             // wait for the arm to finish raising and extending
             while (armPivotMotor.isBusy() || armSlideMotor.isBusy()) {
@@ -150,6 +152,7 @@ public class omniAutoTest extends LinearOpMode {
             armPivotMotor.setTargetPosition(800);
             armPivotMotor.setPower(1);
 
+
             // Wait for the arm to finish lowering
             while (armPivotMotor.getCurrentPosition() > 850) {
                 // Outputs telemetry data to driver hub screen
@@ -158,6 +161,7 @@ public class omniAutoTest extends LinearOpMode {
                 telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
                 telemetry.update();
             }
+
 
             // Pull the arm slide back in
             armSlideMotor.setTargetPosition(400);
@@ -173,6 +177,7 @@ public class omniAutoTest extends LinearOpMode {
                 telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
                 telemetry.update();
             }
+
 
             // Outputs telemetry data to driver hub screen
             telemetry.clearAll();

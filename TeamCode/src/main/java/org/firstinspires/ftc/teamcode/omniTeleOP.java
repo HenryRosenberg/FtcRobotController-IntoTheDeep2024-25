@@ -1,3 +1,50 @@
+// Written primarily by Henry Rosenberg for AcaBots FTC Team #24689
+
+/*
+-------------------- CONTROL SCHEME - CONTROLLER 1 --------------------
+Buttons:
+    A: Hold for Intake
+    B: Hold for Reverse Intake
+    X: Toggle Hanging Hooks, Closed = half arm slide power, Open = full arm slide power
+    Y: Transport Preset (Retract Slide, Arm parallel to ground)
+
+D-Pad:
+    UP: Hold to Extend Arm Slide
+    DOWN: Hold to Retract Arm Slide
+
+Triggers:
+    RT: Raise Arm
+    LT: Lower Arm
+
+Shoulder Buttons:
+    RB: Rotate Claw Wrist Strait
+    LB: Rotate Claw Wrist Left / Stow
+
+Joysticks:
+    Right: Relative Chassis Rotation
+    Left: Absolute Chassis Strafe based on orientation when START button is pressed
+
+-------------------- CONTROL SCHEME - CONTROLLER 2 --------------------
+Buttons:
+    A: Hold for Intake
+    B: Hold for Reverse Intake
+    Y: Transport Preset (Retract Slide, Arm parallel to ground)
+
+Triggers:
+    RT: High Basket Preset (Raise arm, extend slide)
+    LT: Pickup Preset (Intake touching ground)
+
+Joysticks:
+    Right: Relative Chassis Rotation
+    Left: Absolute Chassis Strafe based on orientation when START button is pressed
+
+ ---------------------------- START CONFIG ----------------------------
+ Hanging Hooks: Closed
+ Arm Slide: Retracted
+ Arm Pivot: Down, resting on bottom stop
+ Claw Wrist: Folded left
+ */
+
 package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -8,34 +55,6 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-
-/*
----------- CONTROL SCHEME ------------
-
-Buttons (Controller 1):
-    A: Hold for Intake
-    B: Hold for Reverse Intake
-    X: Toggle Hanging Hooks
-
-D-Pad (Controller 1):
-    UP: Hold to Extend Arm Slide
-    DOWN: Hold to Retract Arm Slide
-    LEFT: Set slide holding power to 0.5
-    RIGHT: Set slide holding power to 1
-
-Triggers (Controller 1):
-    RT: Raise Arm
-    LT: Lower Arm
-
-Shoulder Buttons (Controller 1):
-    RB: Rotate Claw Wrist Strait
-    LB: Rotate Claw Wrist Left / Stow
-
-Joysticks (Both Controllers):
-    Right: Relative Chassis Rotation
-    Left: Absolute Chassis Strafe based on orientation when START button is pressed
- */
-
 
 @TeleOp
 public class omniTeleOP extends LinearOpMode{
@@ -88,6 +107,8 @@ public class omniTeleOP extends LinearOpMode{
         // Hanging Claws
         rightHang = hardwareMap.get(Servo.class, "rightHangServo");
         leftHang = hardwareMap.get(Servo.class, "leftHangServo");
+        rightHang.setPosition(0.6); // Start Closed
+        leftHang.setPosition(0.4);
 
         // Game Element Intake Claw
         clawWrist = hardwareMap.get(Servo.class, "clawWristServo");
@@ -153,7 +174,7 @@ public class omniTeleOP extends LinearOpMode{
             frontRightMotor.setPower(frontRightPower);
             backRightMotor.setPower(backRightPower);
 
-            // Arm Pivot Motor
+            // Controller 1 Arm Pivot Motor
             int armPivotPos = armPivotMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
             if(gamepad1.right_trigger > 0.5 && armPivotPos <= 4000) {
                 armPivotMotor.setPower(1); // extend continuously while button is held
@@ -172,13 +193,17 @@ public class omniTeleOP extends LinearOpMode{
             }
 
 
-            // Hanging hooks
-            if (gamepad1.x && ((rightHang.getPosition() > 0.55) || (leftHang.getPosition() < 0.45))) { // if A button is pressed AND both of the claws is closed
+            // Controller 1 Hanging hooks & arm slide power 'hanging mode'
+            if (gamepad1.x && ((rightHang.getPosition() > 0.55) || (leftHang.getPosition() < 0.45))) { // if A button is pressed AND both of the claws is closed, open the claws
                 rightHang.setPosition(0); // They are facing away from each-other, so they start at opposite ends
                 leftHang.setPosition(1);
-            } else if (gamepad1.x && ((rightHang.getPosition() < 0.55) || (leftHang.getPosition() > 0.45))) { // if A button is pressed AND both of the claws is open
-                rightHang.setPosition(0.6); // +0.6 from starting pos
-                leftHang.setPosition(0.4); // -0.6 from starting pos; - is due to facing opposite direction
+                armSlideHoldingPower = 1; // claws will only be opened for climbing, and full slide power is needed for hanging
+                armSlideMotor.setPower(armSlideHoldingPower);
+            } else if (gamepad1.x && ((rightHang.getPosition() < 0.55) || (leftHang.getPosition() > 0.45))) { // if A button is pressed AND both of the claws is open, close the claws
+                rightHang.setPosition(0.6); // +0.6 from open
+                leftHang.setPosition(0.4); // -0.6 from open, due to facing opposite direction
+                armSlideHoldingPower = 0.5; // When the claws are closed, there will be no hanging force on the slide
+                armSlideMotor.setPower(armSlideHoldingPower);
             }
 
             // Claw Wrist
@@ -189,17 +214,17 @@ public class omniTeleOP extends LinearOpMode{
             }
 
             // Claw Intake
-            if (gamepad1.a) {
-                clawIntake.setPower(-1); // set the power of the continuous servo to full forward
-            } else if (gamepad1.b) {
+            if (gamepad1.a || gamepad2.a) {
+                clawIntake.setPower(-1); // full forward
+            } else if (gamepad1.b || gamepad2.b) {
                 clawIntake.setPower(1); // full backward
             } else {
                 clawIntake.setPower(0); // no power
             }
 
 
-            // Arm Slide
-            //encoder directions become negative depending on motor directions
+            // Controller 1 Arm Slide
+            // encoder directions become negative depending on motor directions
             int armSlidePos = armSlideMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
             if(gamepad1.dpad_up && (Math.abs(armSlidePos) <= 2100)) { // 2100 is hardcoded end stop
                 armSlideMotor.setPower(1); // extend continuously while button is held
@@ -218,11 +243,36 @@ public class omniTeleOP extends LinearOpMode{
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
                 armSlideMotor.setPower(armSlideHoldingPower); // Holding power
             }
-            // Holding Power, for hanging
-            if(gamepad1.dpad_left) {
-                armSlideHoldingPower = 0.5;
-            } else if(gamepad1.dpad_right) {
-                armSlideHoldingPower = 1;
+
+
+            // Transport Preset
+            if (gamepad1.y || gamepad2.y) {
+                armPivotMotor.setTargetPosition(500);
+                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                armPivotMotor.setPower(1); // Full Power
+
+                armSlideMotor.setTargetPosition(100);
+                armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                armSlideMotor.setPower(armSlideHoldingPower); // Holding power dictated by hanging hook state
+            }
+
+            // Controller 2 Presets
+            if (gamepad2.right_trigger > 0.5) { // Raise arm and extend slide
+                armPivotMotor.setTargetPosition(1200); // Almost all the way vertical
+                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                armPivotMotor.setPower(1);
+
+                armSlideMotor.setTargetPosition(3000); // Full extension
+                armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                armSlideMotor.setPower(armSlideHoldingPower); // Holding power dictated by hanging hook state
+            } else if (gamepad2.left_trigger > 0.5) { // Lower arm and slightly extend slide
+                armPivotMotor.setTargetPosition(200); // Below parallel to ground
+                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                armPivotMotor.setPower(1);
+
+                armSlideMotor.setTargetPosition(1200); // ~1/3 extension
+                armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                armSlideMotor.setPower(armSlideHoldingPower); // Holding power dictated by hanging hook state
             }
 
 
