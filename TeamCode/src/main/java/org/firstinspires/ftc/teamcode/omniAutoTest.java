@@ -144,13 +144,13 @@ public class omniAutoTest extends LinearOpMode {
                 telemetry.update();
             }
 
-            sleep(2000);
+            sleep(1500);
 
             omniMove(32, 0.3);
 
 
             // Lower arm to contact rung
-            armPivotMotor.setTargetPosition(1300);
+            armPivotMotor.setTargetPosition(1200);
             armPivotMotor.setPower(1);
 
 
