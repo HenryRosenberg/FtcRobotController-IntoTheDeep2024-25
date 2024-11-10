@@ -24,6 +24,52 @@ public class omniAutoTest extends LinearOpMode {
     CRServo clawIntake;
     IMU imu;
 
+    private void omniMove(double inches, double power) {
+        double cpr = 537.7; //counts per rotation
+        double diameter = (96 / 25.4); // 96mm wheels, 25.4 mm per inch
+        double cpi = cpr / (Math.PI * diameter); //counts per inch, cpr * gear ratio / (pi * diameter (in inches, in the center))
+        double bias = 0.8; //default 0.8
+        double conversion = cpi * bias;
+
+        int move = (int) (Math.round(inches * conversion));
+
+        backLeftMotor.setTargetPosition(backLeftMotor.getCurrentPosition() + move);
+        frontLeftMotor.setTargetPosition(frontLeftMotor.getCurrentPosition() + move);
+        backRightMotor.setTargetPosition(backRightMotor.getCurrentPosition() + move);
+        frontRightMotor.setTargetPosition(frontRightMotor.getCurrentPosition() + move);
+        //
+        frontLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        //
+        frontLeftMotor.setPower(power);
+        backLeftMotor.setPower(power);
+        frontRightMotor.setPower(power);
+        backRightMotor.setPower(power);
+        //
+        while (frontLeftMotor.isBusy() && frontRightMotor.isBusy() && backLeftMotor.isBusy() && backRightMotor.isBusy()) {
+            if (isStopRequested()) {
+                frontRightMotor.setPower(0);
+                frontLeftMotor.setPower(0);
+                backRightMotor.setPower(0);
+                backLeftMotor.setPower(0);
+                return;
+            }
+            // Outputs telemetry data to driver hub screen
+            telemetry.clearAll();
+            telemetry.addData("Auto Status :", "Moving chassis \n");
+            telemetry.update();
+        }
+
+        frontRightMotor.setPower(0);
+        frontLeftMotor.setPower(0);
+        backRightMotor.setPower(0);
+        backLeftMotor.setPower(0);
+    }
+
+
+
     @Override
     public void runOpMode() throws InterruptedException {
         // Hardware Definitions. Must match names setup in robot configuration in the driver hub. config is created and selected selected with driver hub menu
@@ -79,17 +125,17 @@ public class omniAutoTest extends LinearOpMode {
 
 
             // Pivot arm upward
+            armPivotMotor.setTargetPosition(1580);
             armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            armPivotMotor.setTargetPosition(600);
             armPivotMotor.setPower(1);
 
             // Slide the slide out
+            armSlideMotor.setTargetPosition(-1320);
             armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            armSlideMotor.setTargetPosition(1000);
             armSlideMotor.setPower(0.5);
 
             // wait for the arm to finish raising and extending
-            while (armPivotMotor.isBusy() || armSlideMotor.isBusy()) {
+            while (armPivotMotor.getCurrentPosition() < 1500 || armSlideMotor.getCurrentPosition() > -1280) {
                 // Outputs telemetry data to driver hub screen
                 telemetry.clearAll();
                 telemetry.addData("Auto Status :", "Waiting for arm & alide movement to finish \n");
@@ -98,63 +144,18 @@ public class omniAutoTest extends LinearOpMode {
                 telemetry.update();
             }
 
+            sleep(2000);
 
-            // ------------------- Move Forward --------------------
-            double power = 1;
-            double inches = 12; // How far to move
-
-            double cpr = 537.7; //counts per rotation
-            double gearRatio = 19.2;
-            double diameter = (96 / 25.4); // 96mm wheels, 25.4 mm per inch
-            double cpi = (cpr * gearRatio) / (Math.PI * diameter); //counts per inch, cpr * gear ratio / (pi * diameter (in inches, in the center))
-            double bias = 0.8;//default 0.8
-            double conversion = cpi * bias;
-
-            int move = (int) (Math.round(inches * conversion));
-
-            backLeftMotor.setTargetPosition(backLeftMotor.getCurrentPosition() + move);
-            frontLeftMotor.setTargetPosition(frontLeftMotor.getCurrentPosition() + move);
-            backRightMotor.setTargetPosition(backRightMotor.getCurrentPosition() + move);
-            frontRightMotor.setTargetPosition(frontRightMotor.getCurrentPosition() + move);
-            //
-            frontLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            frontRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            backLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            backRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            //
-            frontLeftMotor.setPower(power);
-            backLeftMotor.setPower(power);
-            frontRightMotor.setPower(power);
-            backRightMotor.setPower(power);
-            //
-            while (frontLeftMotor.isBusy() && frontRightMotor.isBusy() && backLeftMotor.isBusy() && backRightMotor.isBusy()) {
-                if (isStopRequested()) {
-                    frontRightMotor.setPower(0);
-                    frontLeftMotor.setPower(0);
-                    backRightMotor.setPower(0);
-                    backLeftMotor.setPower(0);
-                    return;
-                }
-                // Outputs telemetry data to driver hub screen
-                telemetry.clearAll();
-                telemetry.addData("Auto Status :", "Moving chassis \n");
-                telemetry.update();
-            }
-
-            frontRightMotor.setPower(0);
-            frontLeftMotor.setPower(0);
-            backRightMotor.setPower(0);
-            backLeftMotor.setPower(0);
-            // ----------------- End Moving Forward -------------------
+            omniMove(32, 0.3);
 
 
             // Lower arm to contact rung
-            armPivotMotor.setTargetPosition(800);
+            armPivotMotor.setTargetPosition(1300);
             armPivotMotor.setPower(1);
 
 
             // Wait for the arm to finish lowering
-            while (armPivotMotor.getCurrentPosition() > 850) {
+            while (armPivotMotor.getCurrentPosition() > 1350) {
                 // Outputs telemetry data to driver hub screen
                 telemetry.clearAll();
                 telemetry.addData("Auto Status :", "Waiting for arm pivot to lower \n");
@@ -164,13 +165,12 @@ public class omniAutoTest extends LinearOpMode {
 
 
             // Pull the arm slide back in
-            armSlideMotor.setTargetPosition(400);
+            armSlideMotor.setTargetPosition(-1000);
             armSlideMotor.setPower(1);
-            clawIntake.setPower(0.5); // 50% power, ejecting specimen
 
             // wait for the specimen to be attached, wait until the arm is finish retracting and it has been trying for 5 seconds
             double preEjectRuntime = getRuntime();
-            while (armSlideMotor.getCurrentPosition() > 450 && (getRuntime() - preEjectRuntime < 5)) {
+            while (armSlideMotor.getCurrentPosition() < - 1050 && ((getRuntime() - preEjectRuntime) < 2.0)) {
                 // Outputs telemetry data to driver hub screen
                 telemetry.clearAll();
                 telemetry.addData("Auto Status :", "Waiting for specimen to eject \n");
@@ -189,6 +189,22 @@ public class omniAutoTest extends LinearOpMode {
             telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
             telemetry.addData("Claw Intake Servo Power :", clawIntake.getPower());
             telemetry.update();
+
+
+            omniMove(-12, 0.3);
+
+            sleep(1500);
+
+            armSlideMotor.setTargetPosition(0);
+            armSlideMotor.setPower(0.5);
+
+            armPivotMotor.setTargetPosition(50);
+            armPivotMotor.setPower(1);
+
+            sleep(1500);
+
+            armPivotMotor.setPower(0);
+            armSlideMotor.setPower(0);
         }
     }
 }

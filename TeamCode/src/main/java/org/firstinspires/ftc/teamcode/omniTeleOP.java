@@ -6,7 +6,6 @@ Buttons:
     A: Hold for Intake
     B: Hold for Reverse Intake
     X: Toggle Hanging Hooks, Closed = half arm slide power, Open = full arm slide power
-    Y: Transport Preset (Retract Slide, Arm parallel to ground)
 
 D-Pad:
     UP: Hold to Extend Arm Slide
@@ -28,11 +27,6 @@ Joysticks:
 Buttons:
     A: Hold for Intake
     B: Hold for Reverse Intake
-    Y: Transport Preset (Retract Slide, Arm parallel to ground)
-
-Triggers:
-    RT: High Basket Preset (Raise arm, extend slide)
-    LT: Pickup Preset (Intake touching ground)
 
 Joysticks:
     Right: Relative Chassis Rotation
@@ -242,37 +236,6 @@ public class omniTeleOP extends LinearOpMode{
                 armSlideMotor.setTargetPosition(armSlideDesiredPos); // hold the motor at the position it was in last time it was moved
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Use builtin PID loop to hold position
                 armSlideMotor.setPower(armSlideHoldingPower); // Holding power
-            }
-
-
-            // Transport Preset
-            if (gamepad1.y || gamepad2.y) {
-                armPivotMotor.setTargetPosition(500);
-                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                armPivotMotor.setPower(1); // Full Power
-
-                armSlideMotor.setTargetPosition(100);
-                armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                armSlideMotor.setPower(armSlideHoldingPower); // Holding power dictated by hanging hook state
-            }
-
-            // Controller 2 Presets
-            if (gamepad2.right_trigger > 0.5) { // Raise arm and extend slide
-                armPivotMotor.setTargetPosition(1200); // Almost all the way vertical
-                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                armPivotMotor.setPower(1);
-
-                armSlideMotor.setTargetPosition(3000); // Full extension
-                armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                armSlideMotor.setPower(armSlideHoldingPower); // Holding power dictated by hanging hook state
-            } else if (gamepad2.left_trigger > 0.5) { // Lower arm and slightly extend slide
-                armPivotMotor.setTargetPosition(200); // Below parallel to ground
-                armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                armPivotMotor.setPower(1);
-
-                armSlideMotor.setTargetPosition(1200); // ~1/3 extension
-                armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                armSlideMotor.setPower(armSlideHoldingPower); // Holding power dictated by hanging hook state
             }
 
 
