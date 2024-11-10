@@ -179,6 +179,22 @@ public class omniAutoTest extends LinearOpMode {
             }
 
 
+            omniMove(-12, 0.3);
+
+            sleep(1500);
+
+            armSlideMotor.setTargetPosition(0);
+            armSlideMotor.setPower(0.5);
+
+            while( Math.abs(armSlideMotor.getCurrentPosition()) > 100) {
+                telemetry.addData("Auto Status :", "Waiting for arm slide to retract \n");
+                telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
+                telemetry.update();
+            };
+
+            armPivotMotor.setTargetPosition(50);
+            armPivotMotor.setPower(1);
+
             // Outputs telemetry data to driver hub screen
             telemetry.clearAll();
             telemetry.addData("Auto Status :", "Finished! \n");
@@ -189,17 +205,6 @@ public class omniAutoTest extends LinearOpMode {
             telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
             telemetry.addData("Claw Intake Servo Power :", clawIntake.getPower());
             telemetry.update();
-
-
-            omniMove(-12, 0.3);
-
-            sleep(1500);
-
-            armSlideMotor.setTargetPosition(0);
-            armSlideMotor.setPower(0.5);
-
-            armPivotMotor.setTargetPosition(50);
-            armPivotMotor.setPower(1);
 
             sleep(1500);
 

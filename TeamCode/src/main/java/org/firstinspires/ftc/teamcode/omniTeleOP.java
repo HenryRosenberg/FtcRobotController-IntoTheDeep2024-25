@@ -220,7 +220,7 @@ public class omniTeleOP extends LinearOpMode{
             // Controller 1 Arm Slide
             // encoder directions become negative depending on motor directions
             int armSlidePos = armSlideMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
-            if(gamepad1.dpad_up && (Math.abs(armSlidePos) <= 2100)) { // 2100 is hardcoded end stop
+            if(gamepad1.dpad_up && (Math.abs(armSlidePos) <= 2000)) { // 2000 is hardcoded end stop
                 armSlideMotor.setPower(1); // extend continuously while button is held
                 armSlideMotor.setDirection(DcMotor.Direction.REVERSE);
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
