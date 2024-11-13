@@ -170,13 +170,13 @@ public class omniTeleOP extends LinearOpMode{
 
             // Controller 1 Arm Pivot Motor
             int armPivotPos = armPivotMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
-            if(gamepad1.right_trigger > 0.5 && armPivotPos <= 4000) {
-                armPivotMotor.setPower(1); // extend continuously while button is held
+            if((gamepad1.right_trigger > 0.2 && armPivotPos <= 4000) && gamepad1.left_trigger < 0.2) {
+                armPivotMotor.setPower(gamepad1.right_trigger); // extend at the power of the trigger
                 armPivotMotor.setDirection(DcMotor.Direction.FORWARD);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 armPivotDesiredPos = armPivotMotor.getCurrentPosition();
-            } else if (gamepad1.left_trigger > 0.5 && (armPivotPos >= 150 || armPivotPos <= -150)) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 50 of zero
-                armPivotMotor.setPower(1);  // retract continuously while button is held
+            } else if ((gamepad1.left_trigger > 0.2 && (armPivotPos >= 150 || armPivotPos <= -150)) && gamepad1.right_trigger < 0.2) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 50 of zero
+                armPivotMotor.setPower(gamepad1.left_trigger);  // retract continuously at the power of the trigger
                 armPivotMotor.setDirection(DcMotor.Direction.REVERSE);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 armPivotDesiredPos = armPivotMotor.getCurrentPosition();
@@ -239,6 +239,35 @@ public class omniTeleOP extends LinearOpMode{
             }
 
 
+            // Transport Mode
+            if (gamepad1.y) {
+                if (armPivotDesiredPos <= 0) { // If this is negative it means the new value should also be negative
+                    armPivotDesiredPos = -700;
+                } else {
+                    armPivotDesiredPos = 700;
+                }
+
+                if (armSlideDesiredPos <= 0) { // If this is negative it means the new value should also be negative
+                    armSlideDesiredPos = -500;
+                } else {
+                    armSlideDesiredPos = 500;
+                }
+            }
+
+            // High basket preset
+            if (gamepad1.right_trigger > 0.2 && gamepad1.left_trigger > 0.2) {
+                if (armPivotDesiredPos <= 0) { // If this is negative it means the new value should also be negative
+                    armPivotDesiredPos = -1500;
+                } else {
+                    armPivotDesiredPos = 1500;
+                }
+
+                if (armSlideDesiredPos <= 0) { // If this is negative it means the new value should also be negative
+                    armSlideDesiredPos = -1900;
+                } else {
+                    armSlideDesiredPos = 1900;
+                }
+            }
             // Outputs telemetry data to driver hub screen
             telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
             telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
@@ -247,6 +276,8 @@ public class omniTeleOP extends LinearOpMode{
             telemetry.addData("Left Hang Servo Position :", leftHang.getPosition());
             telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
             telemetry.addData("Claw Intake Servo Power :", clawIntake.getPower());
+
+            telemetry.addData("Arm Pivot Desired pos :", armPivotDesiredPos);
             telemetry.update();
         }
     }
