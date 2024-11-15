@@ -46,8 +46,10 @@ Joysticks:
  */
 
 package org.firstinspires.ftc.teamcode;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -55,6 +57,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 @TeleOp
 public class omniTeleOP extends LinearOpMode{
@@ -69,6 +72,8 @@ public class omniTeleOP extends LinearOpMode{
     Servo clawWrist;
     CRServo clawIntake;
     IMU imu;
+    DistanceSensor rightDistanceSensor;
+    DistanceSensor leftDistanceSensor;
 
     private double calcLargestChange(double a, double b) {
         // Return the value of the greatest absolute value of either a or b. Used for dual controller input
@@ -116,13 +121,11 @@ public class omniTeleOP extends LinearOpMode{
         // Hanging Claws
         rightHang = hardwareMap.get(Servo.class, "rightHangServo");
         leftHang = hardwareMap.get(Servo.class, "leftHangServo");
-        rightHang.setPosition(0.6); // Start Closed
-        leftHang.setPosition(0.4);
+
 
         // Game Element Intake Claw
         clawWrist = hardwareMap.get(Servo.class, "clawWristServo");
         clawIntake = hardwareMap.get(CRServo.class, "clawIntakeServo");
-        clawWrist.setPosition(-1); // start within the starting config
 
 
         // Reverse some of the drive motors depending on physical setup
@@ -138,7 +141,16 @@ public class omniTeleOP extends LinearOpMode{
         // Without this, the REV Hub's orientation is assumed to be logo up / USB forward
         imu.initialize(parameters);
 
+        // Chassis-mounted distance sensors
+        rightDistanceSensor = hardwareMap.get(DistanceSensor.class, "rightDistanceSensor");
+        leftDistanceSensor = hardwareMap.get(DistanceSensor.class, "leftDistanceSensor");
+
         waitForStart();
+
+        // Set servos to their starting positions
+        clawWrist.setPosition(-1); // start within the starting config
+        rightHang.setPosition(0.6); // Start Closed
+        leftHang.setPosition(0.4);
 
         if (isStopRequested()) return;
 
@@ -150,9 +162,6 @@ public class omniTeleOP extends LinearOpMode{
             double rx = calcLargestChange(gamepad1.right_stick_x, gamepad2.right_stick_x);
 
 
-            //double y = -gamepad1.left_stick_y;
-            //double x = gamepad1.left_stick_x;
-            //double rx = gamepad1.right_stick_x;
 
             // This button choice was made so that it is hard to hit on accident,
             // it can be freely changed based on preference.
@@ -160,7 +169,7 @@ public class omniTeleOP extends LinearOpMode{
             if (gamepad1.options) {
                 imu.resetYaw();
             }
-            // Testing to determine reason for loosing the IMU mid game
+            // If IMU drops out mid-game
             if (gamepad1.back) {
                 imu.initialize(parameters);
             }
@@ -273,6 +282,9 @@ public class omniTeleOP extends LinearOpMode{
             telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
             telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
             telemetry.addData("Arm Slide Motor Power :", armSlideMotor.getPower());
+
+            telemetry.addData("Right Distance (mm): ", rightDistanceSensor.getDistance(DistanceUnit.MM));
+            telemetry.addData("Left Distance (mm): ", leftDistanceSensor.getDistance(DistanceUnit.MM));
             telemetry.update();
         }
     }
