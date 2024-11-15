@@ -261,41 +261,13 @@ public class omniTeleOP extends LinearOpMode{
             // Transport Mode
             if (gamepad1.y || gamepad2.y) {
                 armPivotDesiredPos = setSignFromReference(700, armPivotDesiredPos);
-                armSlideDesiredPos = setSignFromReference(500, armSlideDesiredPos);
-
-                /*
-                if (armPivotDesiredPos <= 0) { // If this is negative it means the new value should also be negative
-                    armPivotDesiredPos = -700;
-                } else {
-                    armPivotDesiredPos = 700;
-                }
-
-                if (armSlideDesiredPos <= 0) { // If this is negative it means the new value should also be negative
-                    armSlideDesiredPos = -500;
-                } else {
-                    armSlideDesiredPos = 500;
-                }
-                */
+                armSlideDesiredPos = setSignFromReference(200, armSlideDesiredPos);
             }
 
             // High basket preset
             if ((gamepad1.right_trigger > 0.2 && gamepad1.left_trigger > 0.2) || gamepad2.right_trigger > 0.2) { // Both controller 1 triggers or controller 2 right trigger
-                armPivotDesiredPos = setSignFromReference(1500, armPivotDesiredPos);
+                armPivotDesiredPos = setSignFromReference(2200, armPivotDesiredPos);
                 armSlideDesiredPos = setSignFromReference(1900, armSlideDesiredPos);
-
-                /*
-                if (armPivotDesiredPos <= 0) { // If this is negative it means the new value should also be negative
-                    armPivotDesiredPos = -1500;
-                } else {
-                    armPivotDesiredPos = 1500;
-                }
-
-                if (armSlideDesiredPos <= 0) { // If this is negative it means the new value should also be negative
-                    armSlideDesiredPos = -1900;
-                } else {
-                    armSlideDesiredPos = 1900;
-                }
-                */
             }
             // Outputs telemetry data to driver hub screen
             telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
