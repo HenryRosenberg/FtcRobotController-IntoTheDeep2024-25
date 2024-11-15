@@ -1,4 +1,4 @@
-// Written primarily by Henry Rosenberg for AcaBots FTC Team #24689
+// Written primarily by Henry Rosenberg for AcaBots, FTC Team #24689
 
 /*
 -------------------- CONTROL SCHEME - CONTROLLER 1 --------------------
@@ -6,6 +6,7 @@ Buttons:
     A: Hold for Intake
     B: Hold for Reverse Intake
     X: Toggle Hanging Hooks, Closed = half arm slide power, Open = full arm slide power
+    Y: Transport preset - slide mostly retracted, arm parallel to ground
 
 D-Pad:
     UP: Hold to Extend Arm Slide
@@ -14,6 +15,7 @@ D-Pad:
 Triggers:
     RT: Raise Arm
     LT: Lower Arm
+    BOTH: High basket preset
 
 Shoulder Buttons:
     RB: Rotate Claw Wrist Strait
@@ -27,6 +29,10 @@ Joysticks:
 Buttons:
     A: Hold for Intake
     B: Hold for Reverse Intake
+    Y: Transport preset - slide mostly retracted, arm parallel to ground
+
+Triggers:
+    RT: High basket preset
 
 Joysticks:
     Right: Relative Chassis Rotation
@@ -65,11 +71,20 @@ public class omniTeleOP extends LinearOpMode{
     IMU imu;
 
     private double calcLargestChange(double a, double b) {
-        // Return the value of the greatest absolute value of either a or b
+        // Return the value of the greatest absolute value of either a or b. Used for dual controller input
         if(Math.abs(b) > Math.abs(a)) {
             return b;
         } else {
             return a;
+        }
+    }
+
+    private int setSignFromReference(int newAbsoluteValue, int signReference) {
+        // Return the value of newAbsoluteValue with the + or - sign of signReference. Used for teleOp presets
+        if (signReference <= 0) {
+            return -newAbsoluteValue;
+        } else {
+            return newAbsoluteValue;
         }
     }
 
@@ -145,6 +160,10 @@ public class omniTeleOP extends LinearOpMode{
             if (gamepad1.options) {
                 imu.resetYaw();
             }
+            // Testing to determine reason for loosing the IMU mid game
+            if (gamepad1.back) {
+                imu.initialize(parameters);
+            }
 
             double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
@@ -170,12 +189,12 @@ public class omniTeleOP extends LinearOpMode{
 
             // Controller 1 Arm Pivot Motor
             int armPivotPos = armPivotMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
-            if((gamepad1.right_trigger > 0.2 && armPivotPos <= 4000) && gamepad1.left_trigger < 0.2) {
+            if((gamepad1.right_trigger > 0.3 && armPivotPos <= 4000) && gamepad1.left_trigger < 0.1) {
                 armPivotMotor.setPower(gamepad1.right_trigger); // extend at the power of the trigger
                 armPivotMotor.setDirection(DcMotor.Direction.FORWARD);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 armPivotDesiredPos = armPivotMotor.getCurrentPosition();
-            } else if ((gamepad1.left_trigger > 0.2 && (armPivotPos >= 150 || armPivotPos <= -150)) && gamepad1.right_trigger < 0.2) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 50 of zero
+            } else if ((gamepad1.left_trigger > 0.3 && (armPivotPos >= 150 || armPivotPos <= -150)) && gamepad1.right_trigger < 0.1) { // encoder pos is inverted when in reverse; so it just checks to make sure it isn't within 50 of zero
                 armPivotMotor.setPower(gamepad1.left_trigger);  // retract continuously at the power of the trigger
                 armPivotMotor.setDirection(DcMotor.Direction.REVERSE);
                 armPivotMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -240,7 +259,11 @@ public class omniTeleOP extends LinearOpMode{
 
 
             // Transport Mode
-            if (gamepad1.y) {
+            if (gamepad1.y || gamepad2.y) {
+                armPivotDesiredPos = setSignFromReference(700, armPivotDesiredPos);
+                armSlideDesiredPos = setSignFromReference(500, armSlideDesiredPos);
+
+                /*
                 if (armPivotDesiredPos <= 0) { // If this is negative it means the new value should also be negative
                     armPivotDesiredPos = -700;
                 } else {
@@ -252,10 +275,15 @@ public class omniTeleOP extends LinearOpMode{
                 } else {
                     armSlideDesiredPos = 500;
                 }
+                */
             }
 
             // High basket preset
-            if (gamepad1.right_trigger > 0.2 && gamepad1.left_trigger > 0.2) {
+            if ((gamepad1.right_trigger > 0.2 && gamepad1.left_trigger > 0.2) || gamepad2.right_trigger > 0.2) { // Both controller 1 triggers or controller 2 right trigger
+                armPivotDesiredPos = setSignFromReference(1500, armPivotDesiredPos);
+                armSlideDesiredPos = setSignFromReference(1900, armSlideDesiredPos);
+
+                /*
                 if (armPivotDesiredPos <= 0) { // If this is negative it means the new value should also be negative
                     armPivotDesiredPos = -1500;
                 } else {
@@ -267,17 +295,12 @@ public class omniTeleOP extends LinearOpMode{
                 } else {
                     armSlideDesiredPos = 1900;
                 }
+                */
             }
             // Outputs telemetry data to driver hub screen
             telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
             telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
             telemetry.addData("Arm Slide Motor Power :", armSlideMotor.getPower());
-            telemetry.addData("Right Hang Servo Position :", rightHang.getPosition());
-            telemetry.addData("Left Hang Servo Position :", leftHang.getPosition());
-            telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
-            telemetry.addData("Claw Intake Servo Power :", clawIntake.getPower());
-
-            telemetry.addData("Arm Pivot Desired pos :", armPivotDesiredPos);
             telemetry.update();
         }
     }

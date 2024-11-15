@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
 @Autonomous
-public class omniAutoTest extends LinearOpMode {
+public class autoSpecimenOnly extends LinearOpMode {
     DcMotor frontLeftMotor;
     DcMotor backLeftMotor;
     DcMotor frontRightMotor;
@@ -144,7 +144,7 @@ public class omniAutoTest extends LinearOpMode {
                 telemetry.update();
             }
 
-            sleep(1500);
+            sleep(1000);
 
             omniMove(32, 0.3);
 
@@ -179,7 +179,7 @@ public class omniAutoTest extends LinearOpMode {
             }
 
 
-            omniMove(-12, 0.3);
+            omniMove(-20, 0.3);
 
             sleep(1500);
 
@@ -190,7 +190,7 @@ public class omniAutoTest extends LinearOpMode {
                 telemetry.addData("Auto Status :", "Waiting for arm slide to retract \n");
                 telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
                 telemetry.update();
-            };
+            }
 
             armPivotMotor.setTargetPosition(50);
             armPivotMotor.setPower(1);
