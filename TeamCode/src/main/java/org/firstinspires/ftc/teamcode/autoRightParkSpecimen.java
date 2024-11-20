@@ -74,7 +74,9 @@ public class autoRightParkSpecimen extends LinearOpMode {
     }
 
     private void omniMoveByTimeDirection(double xPower, double yPower, double rxPower, boolean runForTime, double desiredRuntimeSeconds) {
-        double startTime = getRuntime(); // in seconds
+        telemetry.addData("Auto Status :", "Inside chassis move function \n");
+        telemetry.update();
+
         double max;
 
         // Omni movement equations
@@ -106,15 +108,9 @@ public class autoRightParkSpecimen extends LinearOpMode {
 
        // if in run for time mode, otherwise waiting will be handled externally
         if (runForTime) {
+            double startTime = getRuntime(); // in seconds
             // Wait for movement to finish
-            while ((getRuntime() - startTime) < desiredRuntimeSeconds) {
-                if (isStopRequested()) {
-                    frontRightMotor.setPower(0);
-                    frontLeftMotor.setPower(0);
-                    backRightMotor.setPower(0);
-                    backLeftMotor.setPower(0);
-                    return;
-                }
+            while ((getRuntime() - startTime) < desiredRuntimeSeconds && opModeIsActive()) {
                 // Outputs telemetry data to driver hub screen
                 telemetry.clearAll();
                 telemetry.addData("Auto Status :", "Moving chassis \n");
@@ -173,6 +169,10 @@ public class autoRightParkSpecimen extends LinearOpMode {
                 RevHubOrientationOnRobot.UsbFacingDirection.RIGHT));
         // Without this, the REV Hub's orientation is assumed to be logo up / USB forward
         imu.initialize(parameters);
+
+        // Chassis-mounted distance sensors
+        rightDistanceSensor = hardwareMap.get(DistanceSensor.class, "rightDistanceSensor");
+        leftDistanceSensor = hardwareMap.get(DistanceSensor.class, "leftDistanceSensor");
 
 
         waitForStart();
@@ -264,41 +264,30 @@ public class autoRightParkSpecimen extends LinearOpMode {
             // Set everything back to fitting inside the robot frame
             armSlideMotor.setTargetPosition(0);
             armSlideMotor.setPower(0.5);
-            while( Math.abs(armSlideMotor.getCurrentPosition()) > 100) {
-                if (isStopRequested()) {
-                    armSlideMotor.setPower(0);
-                    return;
-                }
-                telemetry.addData("Auto Status :", "Waiting for arm slide to retract \n");
-                telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
-                telemetry.update();
-            }
+
+            // wait for slide to retract
+            sleep(800);
+
             armPivotMotor.setTargetPosition(50);
             armPivotMotor.setPower(1);
 
-            // wait for arm to lower
-            while( Math.abs(armPivotMotor.getCurrentPosition()) > 150) {
-                if (isStopRequested()) {
-                    armPivotMotor.setPower(0);
-                    return;
-                }
 
-                telemetry.addData("Auto Status :", "Waiting for arm pivot to lower \n");
-                telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
-                telemetry.update();
-            }
+            // High power not needed to just hold retracted
+            armPivotMotor.setPower(0.25);
+            armSlideMotor.setPower(0.25);
 
+            sleep(3000);
+
+            telemetry.addData("Auto Status :", "Starting movement to park \n");
+            telemetry.update();
 
             // Move right to park. When runForTime is false, it only sets the motor powers, and they need to be turned off later. last parameter is ignored
-            omniMoveByTimeDirection(0.2, 0.0, 0, false, 0.0);
-            while(rightDistanceSensor.getDistance(DistanceUnit.MM) > 200) {
-                if (isStopRequested()) {
-                    frontRightMotor.setPower(0);
-                    frontLeftMotor.setPower(0);
-                    backRightMotor.setPower(0);
-                    backLeftMotor.setPower(0);
-                    return;
-                }
+            omniMoveByTimeDirection(0.3, 0.0, 0, false, 0.0);
+
+            telemetry.addData("Auto Status :", "Motor power set for parking \n");
+            telemetry.update();
+
+            while(rightDistanceSensor.getDistance(DistanceUnit.MM) > 200 && opModeIsActive()) {
                 telemetry.addData("Auto Status : ", "Moving right using distance sensor");
                 telemetry.addData("Right Distance (mm): ", rightDistanceSensor.getDistance(DistanceUnit.MM));
             }
@@ -308,10 +297,12 @@ public class autoRightParkSpecimen extends LinearOpMode {
             backRightMotor.setPower(0);
             backLeftMotor.setPower(0);
 
+            telemetry.addData("Auto Status : ", "Moving back to park");
+
             sleep(200); // let everything settle
 
             // Move back to park for a number of seconds
-            omniMoveByTimeDirection(0.0, -0.2, 0, true, 0.25);
+            omniMoveByTimeDirection(0.0, -0.3, 0, true, 0.25);
 
             sleep(500); // let everything settle before shutting off power
 
