@@ -1,7 +1,5 @@
 // Written primarily by Henry Rosenberg for AcaBots, FTC Team #24689
 
-// This program will drive place a specimen on the high bar, assuming the robot starts directly in front of the submersible
-
 package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -9,11 +7,14 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
 @Autonomous
-public class autoSpecimenOnly extends LinearOpMode {
+public class autoRightParkSpecimen extends LinearOpMode {
     DcMotor frontLeftMotor;
     DcMotor backLeftMotor;
     DcMotor frontRightMotor;
@@ -25,8 +26,10 @@ public class autoSpecimenOnly extends LinearOpMode {
     Servo clawWrist;
     CRServo clawIntake;
     IMU imu;
+    DistanceSensor rightDistanceSensor;
+    DistanceSensor leftDistanceSensor;
 
-    private void omniMoveForward(double inches, double power) {
+    private void omniMoveForwardByEncoder(double inches, double power) {
         double cpr = 537.7; //counts per rotation
         double diameter = (96 / 25.4); // 96mm wheels, 25.4 mm per inch
         double cpi = cpr / (Math.PI * diameter); //counts per inch, cpr * gear ratio / (pi * diameter (in inches, in the center))
@@ -70,6 +73,62 @@ public class autoSpecimenOnly extends LinearOpMode {
         backLeftMotor.setPower(0);
     }
 
+    private void omniMoveByTimeDirection(double xPower, double yPower, double rxPower, boolean runForTime, double desiredRuntimeSeconds) {
+        double startTime = getRuntime(); // in seconds
+        double max;
+
+        // Omni movement equations
+        // Combine the joystick requests for each axis-motion to determine each wheel's power.
+        // Set up a variable for each drive wheel to save the power level for telemetry.
+        double frontLeftPower  = yPower + xPower + rxPower;
+        double frontRightPower = yPower - xPower - rxPower;
+        double backLeftPower   = yPower - xPower + rxPower;
+        double backRightPower  = yPower + xPower - rxPower;
+
+        // Normalize the values so no wheel power exceeds 100%
+        // This ensures that the robot maintains the desired motion.
+        max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
+        max = Math.max(max, Math.abs(backLeftPower));
+        max = Math.max(max, Math.abs(backRightPower));
+
+        if (max > 1.0) {
+            frontLeftPower  /= max;
+            frontRightPower /= max;
+            backLeftPower   /= max;
+            backRightPower  /= max;
+        }
+
+        // Send calculated power to wheels
+        frontLeftMotor.setPower(frontLeftPower);
+        frontRightMotor.setPower(frontRightPower);
+        backLeftMotor.setPower(backLeftPower);
+        backRightMotor.setPower(backRightPower);
+
+       // if in run for time mode, otherwise waiting will be handled externally
+        if (runForTime) {
+            // Wait for movement to finish
+            while ((getRuntime() - startTime) < desiredRuntimeSeconds) {
+                if (isStopRequested()) {
+                    frontRightMotor.setPower(0);
+                    frontLeftMotor.setPower(0);
+                    backRightMotor.setPower(0);
+                    backLeftMotor.setPower(0);
+                    return;
+                }
+                // Outputs telemetry data to driver hub screen
+                telemetry.clearAll();
+                telemetry.addData("Auto Status :", "Moving chassis \n");
+                telemetry.addData("Elapsed Time :", (getRuntime() - startTime));
+                telemetry.addData("Desired Runtime :", desiredRuntimeSeconds);
+                telemetry.update();
+            }
+
+            frontRightMotor.setPower(0);
+            frontLeftMotor.setPower(0);
+            backRightMotor.setPower(0);
+            backLeftMotor.setPower(0);
+        }
+    }
 
 
     @Override
@@ -121,6 +180,7 @@ public class autoSpecimenOnly extends LinearOpMode {
         if (isStopRequested()) {
             return;
         }
+
         if (opModeIsActive()) { // Used to be a while loop
             telemetry.addData("Auto Status :", "Started \n");
             telemetry.update();
@@ -138,6 +198,12 @@ public class autoSpecimenOnly extends LinearOpMode {
 
             // wait for the arm to finish raising and extending
             while (armPivotMotor.getCurrentPosition() < 1500 || armSlideMotor.getCurrentPosition() > -1280) {
+                if (isStopRequested()) {
+                    armPivotMotor.setPower(0);
+                    armSlideMotor.setPower(0);
+                    return;
+                }
+
                 // Outputs telemetry data to driver hub screen
                 telemetry.clearAll();
                 telemetry.addData("Auto Status :", "Waiting for arm & alide movement to finish \n");
@@ -148,7 +214,7 @@ public class autoSpecimenOnly extends LinearOpMode {
 
             sleep(1000);
 
-            omniMoveForward(32, 0.3);
+            omniMoveForwardByEncoder(32, 0.3);
 
 
             // Lower arm to contact rung
@@ -158,6 +224,10 @@ public class autoSpecimenOnly extends LinearOpMode {
 
             // Wait for the arm to finish lowering
             while (armPivotMotor.getCurrentPosition() > 1350) {
+                if (isStopRequested()) {
+                    armPivotMotor.setPower(0);
+                    return;
+                }
                 // Outputs telemetry data to driver hub screen
                 telemetry.clearAll();
                 telemetry.addData("Auto Status :", "Waiting for arm pivot to lower \n");
@@ -170,9 +240,14 @@ public class autoSpecimenOnly extends LinearOpMode {
             armSlideMotor.setTargetPosition(-1000);
             armSlideMotor.setPower(1);
 
-            // wait for the specimen to be attached, wait until the arm is finish retracting and it has been trying for 5 seconds
+            // wait for the specimen to be attached, wait until the arm is finish retracting and it has been trying for 2 seconds
             double preEjectRuntime = getRuntime();
             while (armSlideMotor.getCurrentPosition() < - 1050 && ((getRuntime() - preEjectRuntime) < 2.0)) {
+                if (isStopRequested()) {
+                    armSlideMotor.setPower(0);
+                    return;
+                }
+
                 // Outputs telemetry data to driver hub screen
                 telemetry.clearAll();
                 telemetry.addData("Auto Status :", "Waiting for specimen to eject \n");
@@ -181,21 +256,64 @@ public class autoSpecimenOnly extends LinearOpMode {
             }
 
 
-            omniMoveForward(-20, 0.3);
+            omniMoveForwardByEncoder(-20, 0.3); // Reverse away from the submersible
 
             sleep(1500);
 
+
+            // Set everything back to fitting inside the robot frame
             armSlideMotor.setTargetPosition(0);
             armSlideMotor.setPower(0.5);
-
             while( Math.abs(armSlideMotor.getCurrentPosition()) > 100) {
+                if (isStopRequested()) {
+                    armSlideMotor.setPower(0);
+                    return;
+                }
                 telemetry.addData("Auto Status :", "Waiting for arm slide to retract \n");
                 telemetry.addData("Arm Slide Encoder Position :", armSlideMotor.getCurrentPosition());
                 telemetry.update();
             }
-
             armPivotMotor.setTargetPosition(50);
             armPivotMotor.setPower(1);
+
+            // wait for arm to lower
+            while( Math.abs(armPivotMotor.getCurrentPosition()) > 150) {
+                if (isStopRequested()) {
+                    armPivotMotor.setPower(0);
+                    return;
+                }
+
+                telemetry.addData("Auto Status :", "Waiting for arm pivot to lower \n");
+                telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
+                telemetry.update();
+            }
+
+
+            // Move right to park. When runForTime is false, it only sets the motor powers, and they need to be turned off later. last parameter is ignored
+            omniMoveByTimeDirection(0.2, 0.0, 0, false, 0.0);
+            while(rightDistanceSensor.getDistance(DistanceUnit.MM) > 200) {
+                if (isStopRequested()) {
+                    frontRightMotor.setPower(0);
+                    frontLeftMotor.setPower(0);
+                    backRightMotor.setPower(0);
+                    backLeftMotor.setPower(0);
+                    return;
+                }
+                telemetry.addData("Auto Status : ", "Moving right using distance sensor");
+                telemetry.addData("Right Distance (mm): ", rightDistanceSensor.getDistance(DistanceUnit.MM));
+            }
+            // Turn off the motors after movement is finished
+            frontRightMotor.setPower(0);
+            frontLeftMotor.setPower(0);
+            backRightMotor.setPower(0);
+            backLeftMotor.setPower(0);
+
+            sleep(200); // let everything settle
+
+            // Move back to park for a number of seconds
+            omniMoveByTimeDirection(0.0, -0.2, 0, true, 0.25);
+
+            sleep(500); // let everything settle before shutting off power
 
             // Outputs telemetry data to driver hub screen
             telemetry.clearAll();
@@ -207,8 +325,6 @@ public class autoSpecimenOnly extends LinearOpMode {
             telemetry.addData("Claw Wrist Servo Position :", clawWrist.getPosition());
             telemetry.addData("Claw Intake Servo Power :", clawIntake.getPower());
             telemetry.update();
-
-            sleep(1500);
 
             armPivotMotor.setPower(0);
             armSlideMotor.setPower(0);
