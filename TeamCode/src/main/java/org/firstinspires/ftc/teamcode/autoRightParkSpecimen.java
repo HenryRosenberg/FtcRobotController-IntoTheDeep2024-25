@@ -106,6 +106,11 @@ public class autoRightParkSpecimen extends LinearOpMode {
         backLeftMotor.setPower(backLeftPower);
         backRightMotor.setPower(backRightPower);
 
+        frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
        // if in run for time mode, otherwise waiting will be handled externally
         if (runForTime) {
             double startTime = getRuntime(); // in seconds
@@ -271,18 +276,17 @@ public class autoRightParkSpecimen extends LinearOpMode {
             armPivotMotor.setTargetPosition(50);
             armPivotMotor.setPower(1);
 
+            sleep(2000);
 
             // High power not needed to just hold retracted
             armPivotMotor.setPower(0.25);
             armSlideMotor.setPower(0.25);
 
-            sleep(3000);
-
             telemetry.addData("Auto Status :", "Starting movement to park \n");
             telemetry.update();
 
             // Move right to park. When runForTime is false, it only sets the motor powers, and they need to be turned off later. last parameter is ignored
-            omniMoveByTimeDirection(0.3, 0.0, 0, false, 0.0);
+            omniMoveByTimeDirection(0.3, 0.0, 0.0, false, 0);
 
             telemetry.addData("Auto Status :", "Motor power set for parking \n");
             telemetry.update();
@@ -291,6 +295,7 @@ public class autoRightParkSpecimen extends LinearOpMode {
                 telemetry.addData("Auto Status : ", "Moving right using distance sensor");
                 telemetry.addData("Right Distance (mm): ", rightDistanceSensor.getDistance(DistanceUnit.MM));
             }
+
             // Turn off the motors after movement is finished
             frontRightMotor.setPower(0);
             frontLeftMotor.setPower(0);
@@ -301,8 +306,8 @@ public class autoRightParkSpecimen extends LinearOpMode {
 
             sleep(200); // let everything settle
 
-            // Move back to park for a number of seconds
-            omniMoveByTimeDirection(0.0, -0.3, 0, true, 0.25);
+            // Move back to park for a given time and power
+            omniMoveByTimeDirection(0.0, -0.3, 0, true, 1);
 
             sleep(500); // let everything settle before shutting off power
 
