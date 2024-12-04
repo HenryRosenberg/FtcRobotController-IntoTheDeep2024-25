@@ -276,7 +276,7 @@ public class omniTeleOP extends LinearOpMode{
             // High basket preset
             if ((gamepad1.right_trigger > 0.2 && gamepad1.left_trigger > 0.2) || gamepad2.right_trigger > 0.2) { // Both controller 1 triggers or controller 2 right trigger
                 armPivotDesiredPos = setSignFromReference(2200, armPivotDesiredPos);
-                armSlideDesiredPos = setSignFromReference(1900, armSlideDesiredPos);
+                armSlideDesiredPos = setSignFromReference(1650, armSlideDesiredPos);
             }
             // Outputs telemetry data to driver hub screen
             telemetry.addData("Arm Pivot Encoder Position :", armPivotMotor.getCurrentPosition());
