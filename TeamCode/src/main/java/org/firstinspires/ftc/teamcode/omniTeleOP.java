@@ -39,7 +39,7 @@ Joysticks:
     Left: Absolute Chassis Strafe based on orientation when START button is pressed
 
  ---------------------------- START CONFIG ----------------------------
- Hanging Hooks: Closed
+ Hanging Hooks: Open
  Arm Slide: Retracted
  Arm Pivot: Down, resting on bottom stop
  Claw Wrist: Folded left
@@ -73,7 +73,7 @@ public class omniTeleOP extends LinearOpMode{
     CRServo clawIntake;
     IMU imu;
     DistanceSensor rightDistanceSensor;
-    DistanceSensor leftDistanceSensor;
+    DistanceSensor backDistanceSensor;
 
     private double calcLargestChange(double a, double b) {
         // Return the value of the greatest absolute value of either a or b. Used for dual controller input
@@ -143,7 +143,7 @@ public class omniTeleOP extends LinearOpMode{
 
         // Chassis-mounted distance sensors
         rightDistanceSensor = hardwareMap.get(DistanceSensor.class, "rightDistanceSensor");
-        leftDistanceSensor = hardwareMap.get(DistanceSensor.class, "leftDistanceSensor");
+        backDistanceSensor = hardwareMap.get(DistanceSensor.class, "backDistanceSensor");
 
         waitForStart();
 
@@ -284,7 +284,7 @@ public class omniTeleOP extends LinearOpMode{
             telemetry.addData("Arm Slide Motor Power :", armSlideMotor.getPower());
 
             telemetry.addData("Right Distance (mm): ", rightDistanceSensor.getDistance(DistanceUnit.MM));
-            telemetry.addData("Left Distance (mm): ", leftDistanceSensor.getDistance(DistanceUnit.MM));
+            telemetry.addData("Back Distance (mm): ", backDistanceSensor.getDistance(DistanceUnit.MM));
             telemetry.update();
         }
     }

@@ -125,6 +125,8 @@ public class autoSpecimenOnly extends LinearOpMode {
             telemetry.addData("Auto Status :", "Started \n");
             telemetry.update();
 
+            // Hold specimen lightly
+            clawIntake.setPower(-0.05);
 
             // Pivot arm upward
             armPivotMotor.setTargetPosition(1580);
@@ -182,6 +184,9 @@ public class autoSpecimenOnly extends LinearOpMode {
 
 
             omniMoveForward(-20, 0.3);
+
+            // Turn off intake after releasing
+            clawIntake.setPower(0);
 
             sleep(1500);
 

@@ -27,7 +27,7 @@ public class autoRightParkSpecimen extends LinearOpMode {
     CRServo clawIntake;
     IMU imu;
     DistanceSensor rightDistanceSensor;
-    DistanceSensor leftDistanceSensor;
+    DistanceSensor backDistanceSensor;
 
     private void omniMoveForwardByEncoder(double inches, double power) {
         double cpr = 537.7; //counts per rotation
@@ -184,7 +184,7 @@ public class autoRightParkSpecimen extends LinearOpMode {
 
         // Chassis-mounted distance sensors
         rightDistanceSensor = hardwareMap.get(DistanceSensor.class, "rightDistanceSensor");
-        leftDistanceSensor = hardwareMap.get(DistanceSensor.class, "leftDistanceSensor");
+        backDistanceSensor = hardwareMap.get(DistanceSensor.class, "backDistanceSensor");
 
 
         waitForStart();
@@ -196,6 +196,9 @@ public class autoRightParkSpecimen extends LinearOpMode {
         if (opModeIsActive()) { // Used to be a while loop
             telemetry.addData("Auto Status :", "Started \n");
             telemetry.update();
+
+            // Hold specimen lightly
+            clawIntake.setPower(-0.05);
 
 
             // Pivot arm upward
@@ -272,6 +275,9 @@ public class autoRightParkSpecimen extends LinearOpMode {
 
             sleep(1500);
 
+            // Turn off intake after releasing
+            clawIntake.setPower(0);
+
 
             // Set everything back to fitting inside the robot frame
             armSlideMotor.setTargetPosition(0);
@@ -292,8 +298,8 @@ public class autoRightParkSpecimen extends LinearOpMode {
             telemetry.addData("Auto Status :", "Starting movement to park \n");
             telemetry.update();
 
-            // Move right to park. When runForTime is false, it only sets the motor powers, and they need to be turned off later. last parameter is ignored
-            omniMoveByTimeDirection(0.3, 0.0, 0.0, false, 0);
+            // Move right to park. When runForTime is false, it only sets the motor powers, and they need to be turned off later. last parameter is ignored. rx is counteracting weirdness
+            omniMoveByTimeDirection(0.3, 0.0, 0.025, false, 0);
 
             while(rightDistanceSensor.getDistance(DistanceUnit.MM) > 200 && opModeIsActive()) {
                 telemetry.addData("Auto Status : ", "Moving right using distance sensor");
@@ -312,7 +318,19 @@ public class autoRightParkSpecimen extends LinearOpMode {
             sleep(200); // let everything settle
 
             // Move back to park for a given time and power
-            omniMoveByTimeDirection(0.0, -0.3, 0, true, 0.5);
+            omniMoveByTimeDirection(0.0, -0.3, 0, false, 0);
+
+            while(backDistanceSensor.getDistance(DistanceUnit.MM) > 150 && opModeIsActive()) {
+                telemetry.addData("Auto Status : ", "Moving right using distance sensor");
+                telemetry.addData("Back Distance (mm): ", backDistanceSensor.getDistance(DistanceUnit.MM));
+                telemetry.update();
+            }
+
+            // Turn off the motors after movement is finished
+            frontRightMotor.setPower(0);
+            frontLeftMotor.setPower(0);
+            backRightMotor.setPower(0);
+            backLeftMotor.setPower(0);
 
             sleep(500); // let everything settle before shutting off power
 
