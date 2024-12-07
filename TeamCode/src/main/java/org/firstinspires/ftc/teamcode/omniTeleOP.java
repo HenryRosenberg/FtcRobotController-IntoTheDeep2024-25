@@ -117,6 +117,7 @@ public class omniTeleOP extends LinearOpMode{
         int armSlideDesiredPos = 0;
         boolean armSlideLastMoveDirection = false; // false = retract, true = extend, starting is equivalent to having just retracted
         double armSlideHoldingPower = 0.5; // Power to hold slide in place, 0.5 to prevent overheating, can be set to 1 for hangs
+        int armSlideSoftLimit = 2000;
 
         // Hanging Claws
         rightHang = hardwareMap.get(Servo.class, "rightHangServo");
@@ -220,11 +221,13 @@ public class omniTeleOP extends LinearOpMode{
                 rightHang.setPosition(0); // They are facing away from each-other, so they start at opposite ends
                 leftHang.setPosition(1);
                 armSlideHoldingPower = 1; // claws will only be opened for climbing, and full slide power is needed for hanging
+                armSlideSoftLimit = 2200;
                 armSlideMotor.setPower(armSlideHoldingPower);
             } else if (gamepad1.x && ((rightHang.getPosition() < 0.55) || (leftHang.getPosition() > 0.45))) { // if A button is pressed AND both of the claws is open, close the claws
                 rightHang.setPosition(0.6); // +0.6 from open
                 leftHang.setPosition(0.4); // -0.6 from open, due to facing opposite direction
                 armSlideHoldingPower = 0.5; // When the claws are closed, there will be no hanging force on the slide
+                armSlideSoftLimit = 2000;
                 armSlideMotor.setPower(armSlideHoldingPower);
             }
 
@@ -248,7 +251,7 @@ public class omniTeleOP extends LinearOpMode{
             // Controller 1 Arm Slide
             // encoder directions become negative depending on motor directions
             int armSlidePos = armSlideMotor.getCurrentPosition(); // current position of the slide, used to prevent overextension/going past 0
-            if(gamepad1.dpad_up && (Math.abs(armSlidePos) <= 2000)) { // 2000 is hardcoded end stop
+            if(gamepad1.dpad_up && (Math.abs(armSlidePos) <= armSlideSoftLimit)) { // 2000 is hardcoded end stop
                 armSlideMotor.setPower(1); // extend continuously while button is held
                 armSlideMotor.setDirection(DcMotor.Direction.REVERSE);
                 armSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
