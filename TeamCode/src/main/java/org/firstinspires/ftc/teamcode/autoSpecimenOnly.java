@@ -126,7 +126,7 @@ public class autoSpecimenOnly extends LinearOpMode {
             telemetry.update();
 
             // Hold specimen lightly
-            clawIntake.setPower(-0.053);
+            clawIntake.setPower(-0.048);
 
             // Pivot arm upward
             armPivotMotor.setTargetPosition(1580);
