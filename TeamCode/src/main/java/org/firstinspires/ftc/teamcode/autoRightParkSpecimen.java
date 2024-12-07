@@ -229,16 +229,16 @@ public class autoRightParkSpecimen extends LinearOpMode {
 
             sleep(1000);
 
-            omniMoveForwardByEncoder(32, 0.3);
+            omniMoveForwardByEncoder(38, 0.3);
 
 
             // Lower arm to contact rung
-            armPivotMotor.setTargetPosition(1200);
+            armPivotMotor.setTargetPosition(1230);
             armPivotMotor.setPower(1);
 
 
             // Wait for the arm to finish lowering
-            while (armPivotMotor.getCurrentPosition() > 1350) {
+            while (armPivotMotor.getCurrentPosition() > 1280) {
                 if (isStopRequested()) {
                     armPivotMotor.setPower(0);
                     return;
@@ -271,7 +271,7 @@ public class autoRightParkSpecimen extends LinearOpMode {
             }
 
 
-            omniMoveForwardByEncoder(-20, 0.3); // Reverse away from the submersible
+            omniMoveForwardByEncoder(-16, 0.3); // Reverse away from the submersible
 
             sleep(1500);
 
@@ -299,7 +299,7 @@ public class autoRightParkSpecimen extends LinearOpMode {
             telemetry.update();
 
             // Move right to park. When runForTime is false, it only sets the motor powers, and they need to be turned off later. last parameter is ignored. rx is counteracting weirdness
-            omniMoveByTimeDirection(0.3, 0.0, 0.025, false, 0);
+            omniMoveByTimeDirection(0.3, 0.0, 0.02, false, 0);
 
             while(rightDistanceSensor.getDistance(DistanceUnit.MM) > 200 && opModeIsActive()) {
                 telemetry.addData("Auto Status : ", "Moving right using distance sensor");

@@ -168,11 +168,11 @@ public class omniTeleOP extends LinearOpMode{
             // it can be freely changed based on preference.
             // The equivalent button is start on Xbox-style controllers.
             if (gamepad1.options) {
+                imu.initialize(parameters);
                 imu.resetYaw();
             }
-            // If IMU drops out mid-game
             if (gamepad1.back) {
-                imu.initialize(parameters);
+                armSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);  // Reset the motor encoder so that it reads zero ticks
             }
 
             double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);

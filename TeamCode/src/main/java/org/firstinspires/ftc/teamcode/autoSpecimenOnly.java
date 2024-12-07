@@ -150,16 +150,16 @@ public class autoSpecimenOnly extends LinearOpMode {
 
             sleep(1000);
 
-            omniMoveForward(32, 0.3);
+            omniMoveForward(38, 0.3);
 
 
-            // Lower arm to contact rung
-            armPivotMotor.setTargetPosition(1200);
+            // Lower arm to contact rung3
+            armPivotMotor.setTargetPosition(1230);
             armPivotMotor.setPower(1);
 
 
             // Wait for the arm to finish lowering
-            while (armPivotMotor.getCurrentPosition() > 1350) {
+            while (armPivotMotor.getCurrentPosition() > 1280) {
                 // Outputs telemetry data to driver hub screen
                 telemetry.clearAll();
                 telemetry.addData("Auto Status :", "Waiting for arm pivot to lower \n");
