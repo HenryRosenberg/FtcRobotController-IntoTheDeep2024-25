@@ -9,8 +9,11 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 @Autonomous
 public class autoSpecimenOnly extends LinearOpMode {
@@ -25,52 +28,74 @@ public class autoSpecimenOnly extends LinearOpMode {
     Servo clawWrist;
     CRServo clawIntake;
     IMU imu;
+    DistanceSensor rightDistanceSensor;
+    DistanceSensor backDistanceSensor;
 
-    private void omniMoveForward(double inches, double power) {
-        double cpr = 537.7; //counts per rotation
-        double diameter = (96 / 25.4); // 96mm wheels, 25.4 mm per inch
-        double cpi = cpr / (Math.PI * diameter); //counts per inch, cpr * gear ratio / (pi * diameter (in inches, in the center))
-        double bias = 0.8; //default 0.8
-        double conversion = cpi * bias;
 
-        int move = (int) (Math.round(inches * conversion));
+    private void omniMoveByTimeDirection(double xPower, double yPower, double rxPower, boolean runForTime, double desiredRuntimeSeconds) {
+        telemetry.addData("Auto Status :", "Inside chassis move function \n");
+        telemetry.update();
 
-        backLeftMotor.setTargetPosition(backLeftMotor.getCurrentPosition() + move);
-        frontLeftMotor.setTargetPosition(frontLeftMotor.getCurrentPosition() + move);
-        backRightMotor.setTargetPosition(backRightMotor.getCurrentPosition() + move);
-        frontRightMotor.setTargetPosition(frontRightMotor.getCurrentPosition() + move);
-        //
-        frontLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        frontRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        backLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        backRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        //
-        frontLeftMotor.setPower(power);
-        backLeftMotor.setPower(power);
-        frontRightMotor.setPower(power);
-        backRightMotor.setPower(power);
-        //
-        while (frontLeftMotor.isBusy() && frontRightMotor.isBusy() && backLeftMotor.isBusy() && backRightMotor.isBusy()) {
-            if (isStopRequested()) {
-                frontRightMotor.setPower(0);
-                frontLeftMotor.setPower(0);
-                backRightMotor.setPower(0);
-                backLeftMotor.setPower(0);
-                return;
-            }
-            // Outputs telemetry data to driver hub screen
-            telemetry.clearAll();
-            telemetry.addData("Auto Status :", "Moving chassis \n");
-            telemetry.update();
+        double max;
+
+        // Omni movement equations
+        // Combine the joystick requests for each axis-motion to determine each wheel's power.
+        // Set up a variable for each drive wheel to save the power level for telemetry.
+        double frontLeftPower  = yPower + xPower + rxPower;
+        double frontRightPower = yPower - xPower - rxPower;
+        double backLeftPower   = yPower - xPower + rxPower;
+        double backRightPower  = yPower + xPower - rxPower;
+
+        // Normalize the values so no wheel power exceeds 100%
+        // This ensures that the robot maintains the desired motion.
+        max = Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower));
+        max = Math.max(max, Math.abs(backLeftPower));
+        max = Math.max(max, Math.abs(backRightPower));
+
+        if (max > 1.0) {
+            frontLeftPower  /= max;
+            frontRightPower /= max;
+            backLeftPower   /= max;
+            backRightPower  /= max;
         }
 
-        frontRightMotor.setPower(0);
-        frontLeftMotor.setPower(0);
-        backRightMotor.setPower(0);
-        backLeftMotor.setPower(0);
+
+        frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        // Send calculated power to wheels
+        frontLeftMotor.setPower(frontLeftPower);
+        frontRightMotor.setPower(frontRightPower);
+        backLeftMotor.setPower(backLeftPower);
+        backRightMotor.setPower(backRightPower);
+
+        telemetry.addData("FL Power: ", frontLeftPower);
+        telemetry.addData("FR Power: ", frontRightPower);
+        telemetry.addData("BL Power: ", backLeftPower);
+        telemetry.addData("BR Power: ", backRightPower);
+        telemetry.update();
+
+        // if in run for time mode, otherwise waiting will be handled externally
+        if (runForTime) {
+            double startTime = getRuntime(); // in seconds
+            // Wait for movement to finish
+            while ((getRuntime() - startTime) < desiredRuntimeSeconds && opModeIsActive()) {
+                // Outputs telemetry data to driver hub screen
+                telemetry.clearAll();
+                telemetry.addData("Auto Status :", "Moving chassis \n");
+                telemetry.addData("Elapsed Time :", (getRuntime() - startTime));
+                telemetry.addData("Desired Runtime :", desiredRuntimeSeconds);
+                telemetry.update();
+            }
+
+            frontRightMotor.setPower(0);
+            frontLeftMotor.setPower(0);
+            backRightMotor.setPower(0);
+            backLeftMotor.setPower(0);
+        }
     }
-
-
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -115,6 +140,10 @@ public class autoSpecimenOnly extends LinearOpMode {
         // Without this, the REV Hub's orientation is assumed to be logo up / USB forward
         imu.initialize(parameters);
 
+        // Chassis-mounted distance sensors
+        rightDistanceSensor = hardwareMap.get(DistanceSensor.class, "rightDistanceSensor");
+        backDistanceSensor = hardwareMap.get(DistanceSensor.class, "backDistanceSensor");
+
 
         waitForStart();
 
@@ -129,17 +158,17 @@ public class autoSpecimenOnly extends LinearOpMode {
             clawIntake.setPower(-0.048);
 
             // Pivot arm upward
-            armPivotMotor.setTargetPosition(1580);
+            armPivotMotor.setTargetPosition(1620);
             armPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             armPivotMotor.setPower(1);
 
             // Slide the slide out
-            armSlideMotor.setTargetPosition(-1320);
+            armSlideMotor.setTargetPosition(-1190);
             armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             armSlideMotor.setPower(0.5);
 
             // wait for the arm to finish raising and extending
-            while (armPivotMotor.getCurrentPosition() < 1500 || armSlideMotor.getCurrentPosition() > -1280) {
+            while (armPivotMotor.getCurrentPosition() < 1550 || armSlideMotor.getCurrentPosition() > -1160) {
                 // Outputs telemetry data to driver hub screen
                 telemetry.clearAll();
                 telemetry.addData("Auto Status :", "Waiting for arm & alide movement to finish \n");
@@ -150,10 +179,27 @@ public class autoSpecimenOnly extends LinearOpMode {
 
             sleep(1000);
 
-            omniMoveForward(38, 0.3);
+            telemetry.addData("Auto Status : ", "Moving forward to submersible");
+
+            // Move back to park for a given time and power
+            omniMoveByTimeDirection(0.0, 0.3, 0, false, 0);
+
+            while(backDistanceSensor.getDistance(DistanceUnit.MM) < 720 && opModeIsActive()) {
+                telemetry.addData("Auto Status : ", "Moving forward using distance sensor");
+                telemetry.addData("Back Distance (mm): ", backDistanceSensor.getDistance(DistanceUnit.MM));
+                telemetry.update();
+            }
+
+            // Turn off the motors after movement is finished
+            frontRightMotor.setPower(0);
+            frontLeftMotor.setPower(0);
+            backRightMotor.setPower(0);
+            backLeftMotor.setPower(0);
+
+            sleep(500); // let everything settle
 
 
-            // Lower arm to contact rung3
+            // Lower arm to contact rung
             armPivotMotor.setTargetPosition(1230);
             armPivotMotor.setPower(1);
 
@@ -182,11 +228,23 @@ public class autoSpecimenOnly extends LinearOpMode {
                 telemetry.update();
             }
 
-
-            omniMoveForward(-20, 0.3);
-
             // Turn off intake after releasing
             clawIntake.setPower(0);
+
+            // Move back to park for a given time and power
+            omniMoveByTimeDirection(0.0, -0.3, 0, false, 0);
+
+            while(backDistanceSensor.getDistance(DistanceUnit.MM) > 300 && opModeIsActive()) {
+                telemetry.addData("Auto Status : ", "Moving back using distance sensor");
+                telemetry.addData("Back Distance (mm): ", backDistanceSensor.getDistance(DistanceUnit.MM));
+                telemetry.update();
+            }
+
+            // Turn off the motors after movement is finished
+            frontRightMotor.setPower(0);
+            frontLeftMotor.setPower(0);
+            backRightMotor.setPower(0);
+            backLeftMotor.setPower(0);
 
             sleep(1500);
 
