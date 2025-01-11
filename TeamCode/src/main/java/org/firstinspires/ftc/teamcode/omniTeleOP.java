@@ -11,6 +11,7 @@ Buttons:
 D-Pad:
     UP: Hold to Extend Arm Slide
     DOWN: Hold to Retract Arm Slide
+    RIGHT: Disable Arm End Stop, in case of belt slippage
 
 Triggers:
     RT: Raise Arm
@@ -221,7 +222,7 @@ public class omniTeleOP extends LinearOpMode{
                 rightHang.setPosition(0); // They are facing away from each-other, so they start at opposite ends
                 leftHang.setPosition(1);
                 armSlideHoldingPower = 1; // claws will only be opened for climbing, and full slide power is needed for hanging
-                armSlideSoftLimit = 2400;
+                armSlideSoftLimit = 2250; // max reach
                 armSlideMotor.setPower(armSlideHoldingPower);
             } else if (gamepad1.x && ((rightHang.getPosition() < 0.55) || (leftHang.getPosition() > 0.45))) { // if A button is pressed AND both of the claws is open, close the claws
                 rightHang.setPosition(0.6); // +0.6 from open
@@ -229,6 +230,10 @@ public class omniTeleOP extends LinearOpMode{
                 armSlideHoldingPower = 0.5; // When the claws are closed, there will be no hanging force on the slide
                 armSlideSoftLimit = 2000;
                 armSlideMotor.setPower(armSlideHoldingPower);
+            }
+
+            if (gamepad1.dpad_right) {
+                armSlideSoftLimit = 5000; // No limit, in case of belt slip
             }
 
             // Claw Wrist
