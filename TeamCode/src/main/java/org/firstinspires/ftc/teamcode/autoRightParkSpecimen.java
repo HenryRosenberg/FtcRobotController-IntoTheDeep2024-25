@@ -188,10 +188,10 @@ public class autoRightParkSpecimen extends LinearOpMode {
 
             telemetry.addData("Auto Status : ", "Moving forward to submersible");
 
-            // Move back to park for a given time and power
+            // Move forward
             omniMoveByTimeDirection(0.0, 0.3, 0, false, 0);
 
-            while(backDistanceSensor.getDistance(DistanceUnit.MM) < 720 && opModeIsActive()) {
+            while(backDistanceSensor.getDistance(DistanceUnit.MM) < 690 && opModeIsActive()) {
                 telemetry.addData("Auto Status : ", "Moving forward using distance sensor");
                 telemetry.addData("Back Distance (mm): ", backDistanceSensor.getDistance(DistanceUnit.MM));
                 telemetry.update();
