@@ -221,7 +221,7 @@ public class omniTeleOP extends LinearOpMode{
                 rightHang.setPosition(0); // They are facing away from each-other, so they start at opposite ends
                 leftHang.setPosition(1);
                 armSlideHoldingPower = 1; // claws will only be opened for climbing, and full slide power is needed for hanging
-                armSlideSoftLimit = 2200;
+                armSlideSoftLimit = 2400;
                 armSlideMotor.setPower(armSlideHoldingPower);
             } else if (gamepad1.x && ((rightHang.getPosition() < 0.55) || (leftHang.getPosition() > 0.45))) { // if A button is pressed AND both of the claws is open, close the claws
                 rightHang.setPosition(0.6); // +0.6 from open

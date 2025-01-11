@@ -154,7 +154,7 @@ public class autoRightParkSpecimen extends LinearOpMode {
             telemetry.update();
 
             // Hold specimen lightly
-            clawIntake.setPower(-0.048);
+            clawIntake.setPower(-0.053);
 
 
             // Pivot arm upward
@@ -163,12 +163,12 @@ public class autoRightParkSpecimen extends LinearOpMode {
             armPivotMotor.setPower(1);
 
             // Slide the slide out
-            armSlideMotor.setTargetPosition(-1190);
+            armSlideMotor.setTargetPosition(-1100);
             armSlideMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             armSlideMotor.setPower(0.5);
 
             // wait for the arm to finish raising and extending
-            while (armPivotMotor.getCurrentPosition() < 1550 || armSlideMotor.getCurrentPosition() > -1160) {
+            while (armPivotMotor.getCurrentPosition() < 1550 || armSlideMotor.getCurrentPosition() > -1060) {
                 if (isStopRequested()) {
                     armPivotMotor.setPower(0);
                     armSlideMotor.setPower(0);
@@ -191,7 +191,7 @@ public class autoRightParkSpecimen extends LinearOpMode {
             // Move forward
             omniMoveByTimeDirection(0.0, 0.3, 0, false, 0);
 
-            while(backDistanceSensor.getDistance(DistanceUnit.MM) < 690 && opModeIsActive()) {
+            while(backDistanceSensor.getDistance(DistanceUnit.MM) < 620 && opModeIsActive()) {
                 telemetry.addData("Auto Status : ", "Moving forward using distance sensor");
                 telemetry.addData("Back Distance (mm): ", backDistanceSensor.getDistance(DistanceUnit.MM));
                 telemetry.update();
