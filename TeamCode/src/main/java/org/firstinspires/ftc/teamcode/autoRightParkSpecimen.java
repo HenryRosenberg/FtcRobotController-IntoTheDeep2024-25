@@ -154,7 +154,7 @@ public class autoRightParkSpecimen extends LinearOpMode {
             telemetry.update();
 
             // Hold specimen lightly
-            clawIntake.setPower(-0.053);
+            clawIntake.setPower(-0.0528);
 
 
             // Pivot arm upward
